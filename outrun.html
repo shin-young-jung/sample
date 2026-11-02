@@ -31,9 +31,25 @@
   #gear { font-size: 34px; line-height: 1; }
   #msg { position: absolute; top: 28%; left: 0; right: 0; text-align: center; font-size: clamp(30px, 7vw, 66px); color: #ffd400; }
   #sub { position: absolute; top: calc(28% + clamp(44px, 9vw, 86px)); left: 0; right: 0; text-align: center; font-size: clamp(13px, 2.3vw, 20px); line-height: 1.6; padding: 0 16px; }
-  #touch { position: fixed; inset: auto 0 0 0; height: 40%; display: none; pointer-events: none; }
-  #touch div { position: absolute; bottom: 70px; width: 76px; height: 76px; border-radius: 50%; background: rgba(255,255,255,.18);
-    border: 2px solid rgba(255,255,255,.5); color: #fff; font: bold 16px Arial; display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+  #touch { position: fixed; inset: 0; display: none; pointer-events: none; }
+  #touch div { position: absolute; width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,.16);
+    border: 2px solid rgba(255,255,255,.5); color: #fff; font: bold 15px Arial; display: flex; align-items: center; justify-content: center;
+    pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+  #touch div.on { background: rgba(255,212,0,.45); }
+  #touch .b1 { bottom: calc(20px + env(safe-area-inset-bottom)); }
+  #touch .b2 { bottom: calc(102px + env(safe-area-inset-bottom)); }
+  body.touch #touch { display: block; }
+  body.touch #speedo { bottom: calc(190px + env(safe-area-inset-bottom)); }
+  body.touch #gearBox { bottom: calc(190px + env(safe-area-inset-bottom)); }
+  @media (max-width: 640px) {
+    #tr { display: flex; flex-direction: column-reverse; align-items: flex-end; }
+    #stage { font-size: 11px; margin: 6px 0 0; max-width: 34vw; }
+    #time { font-size: 40px; }
+    #score { font-size: 17px; }
+    #speed { font-size: 36px; }
+    #gear { font-size: 26px; }
+    #tacho i { width: 5px; }
+  }
 </style>
 <script type="importmap">
 { "imports": {
@@ -53,11 +69,11 @@
   <div id="sub"></div>
 </div>
 <div id="touch">
-  <div id="tLeft" style="left:16px">◀</div>
-  <div id="tRight" style="left:108px">▶</div>
-  <div id="tGear" style="right:200px">GEAR</div>
-  <div id="tBrake" style="right:108px">BRAKE</div>
-  <div id="tGas" style="right:16px">GAS</div>
+  <div id="tLeft" class="b1" style="left:16px">◀</div>
+  <div id="tRight" class="b1" style="left:100px">▶</div>
+  <div id="tBrake" class="b1" style="right:100px">BRAKE</div>
+  <div id="tGas" class="b1" style="right:16px">GAS</div>
+  <div id="tGear" class="b2" style="right:16px">GEAR</div>
 </div>
 
 <script type="module">
@@ -811,15 +827,23 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyM') toggleMusic();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
-if (matchMedia('(pointer: coarse)').matches) {
-  document.getElementById('touch').style.display = 'block';
+// 터치 버튼은 실제로 화면을 터치했을 때만 표시 (PC에서 키보드를 쓰면 숨김)
+const setTouchMode = on => document.body.classList.toggle('touch', on);
+addEventListener('touchstart', () => setTouchMode(true), { passive: true });
+addEventListener('keydown', () => setTouchMode(false));
+{
   const bind = (id, k) => {
     const el = document.getElementById(id);
-    el.addEventListener('pointerdown', e => { e.preventDefault(); touch[k] = true; if (state !== 'race') startOrRestart(); });
-    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, () => (touch[k] = false));
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      if (state === 'title' && (k === 'left' || k === 'right')) { selectSong(songIdx + (k === 'left' ? -1 : 1)); return; }
+      touch[k] = true; el.classList.add('on');
+      if (state !== 'race' && state !== 'countdown') startOrRestart();
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, () => { touch[k] = false; el.classList.remove('on'); });
   };
   bind('tLeft', 'left'); bind('tRight', 'right'); bind('tGas', 'gas'); bind('tBrake', 'brake');
-  document.getElementById('tGear').addEventListener('pointerdown', e => { e.preventDefault(); shiftGear(); });
+  document.getElementById('tGear').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); shiftGear(); });
 }
 renderer.domElement.addEventListener('pointerdown', () => { if (state !== 'race' && state !== 'countdown') startOrRestart(); });
 
@@ -944,7 +968,7 @@ function reset() {
 }
 function showTitle() {
   msg.textContent = 'OUT RUN 3D';
-  sub.innerHTML = `♪ ◀ ${SONGS[songIdx].name} ▶ ♪<br>ENTER / 화면 터치로 시작<br>←→ 핸들 · ↑ 가속 · ↓ 브레이크 · SPACE 기어(LOW/HIGH) · M 음악<br>체크포인트 갈림길에서 왼쪽/오른쪽 길을 골라 5개 골 중 하나로!`;
+  sub.innerHTML = `♪ ◀ ${SONGS[songIdx].name} ▶ ♪<br>ENTER / 화면 터치로 시작 (모바일: ◀▶ 버튼으로 음악 선택)<br>←→ 핸들 · ↑ 가속 · ↓ 브레이크 · SPACE 기어(LOW/HIGH) · M 음악<br>체크포인트 갈림길에서 왼쪽/오른쪽 길을 골라 5개 골 중 하나로!`;
   msgT = 0;
 }
 function startOrRestart() {
@@ -1236,7 +1260,8 @@ function render(dt) {
   tmpV.x += (Math.random() - 0.5) * camShake; tmpV.y += (Math.random() - 0.5) * camShake;
   camera.position.copy(tmpV);
   camera.lookAt(tmpL);
-  camera.fov += ((58 + sr * 14) - camera.fov) * Math.min(1, dt * 3);
+  const baseFov = camera.aspect < 1 ? 80 : 58; // 세로 화면에서는 시야를 넓게
+  camera.fov += ((baseFov + sr * 14) - camera.fov) * Math.min(1, dt * 3);
   camera.updateProjectionMatrix();
 
   sky.position.copy(camera.position);
