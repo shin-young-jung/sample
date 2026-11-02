@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>공룡 점프 게임</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #f7f7f7; color: #535353;
+    font-family: "Courier New", monospace; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  canvas { width: min(95vw, 900px); height: auto; background: #fff; border-bottom: 2px solid #535353; image-rendering: pixelated; }
+  p { margin: 12px; font-size: 14px; text-align: center; }
+</style>
+</head>
+<body>
+<canvas id="c" width="900" height="260"></canvas>
+<p>Space / ↑ / 터치: 점프 &nbsp;|&nbsp; ↓: 숙이기 &nbsp;|&nbsp; 게임오버 후 Space: 재시작</p>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height, GROUND = H - 40;
+const FG = '#535353';
+
+const GRAVITY = 0.65, JUMP_V = -12.5;
+let state, dino, obstacles, clouds, speed, score, hi = +localStorage.getItem('dinoHi') || 0, frame, nextSpawn;
+
+function reset() {
+  dino = { x: 50, y: GROUND, w: 40, h: 44, vy: 0, duck: false };
+  obstacles = []; clouds = [{ x: 200, y: 50 }, { x: 600, y: 80 }];
+  speed = 6; score = 0; frame = 0; nextSpawn = 60;
+  state = 'run';
+}
+reset(); state = 'ready';
+
+const onGround = () => dino.y >= GROUND;
+function jump() {
+  if (state === 'ready') { reset(); }
+  if (state === 'over') { if (frame > 20) reset(); return; }
+  if (onGround() && !dino.duck) dino.vy = JUMP_V;
+}
+
+addEventListener('keydown', e => {
+  if (['Space', 'ArrowUp'].includes(e.code)) { e.preventDefault(); if (!e.repeat) jump(); }
+  if (e.code === 'ArrowDown') { e.preventDefault(); dino.duck = true; if (!onGround()) dino.vy = Math.max(dino.vy, 10); }
+});
+addEventListener('keyup', e => { if (e.code === 'ArrowDown') dino.duck = false; });
+cv.addEventListener('pointerdown', e => { e.preventDefault(); jump(); });
+
+function spawn() {
+  const r = Math.random();
+  if (score > 300 && r < 0.3) {
+    const high = [GROUND - 20, GROUND - 55, GROUND - 90][Math.floor(Math.random() * 3)];
+    obstacles.push({ type: 'bird', x: W, y: high, w: 40, h: 28 });
+  } else {
+    const n = 1 + Math.floor(Math.random() * 3), h = 30 + Math.floor(Math.random() * 25);
+    obstacles.push({ type: 'cactus', x: W, y: GROUND, w: 16 * n, h, n });
+  }
+  nextSpawn = 50 + Math.random() * 60 + (14 - speed) * 4;
+}
+
+function hitbox(o) {
+  // y is bottom for cactus/dino; bird y is bottom as well
+  return { x: o.x, y: o.y - o.h, w: o.w, h: o.h };
+}
+function collide(a, b) {
+  const pad = 6;
+  return a.x + pad < b.x + b.w && a.x + a.w - pad > b.x && a.y + pad < b.y + b.h && a.y + a.h - pad > b.y;
+}
+
+function update() {
+  if (state !== 'run') { frame++; return; }
+  frame++;
+  speed = Math.min(14, 6 + score / 400);
+  score += speed * 0.1;
+
+  dino.vy += GRAVITY; dino.y += dino.vy;
+  if (dino.y > GROUND) { dino.y = GROUND; dino.vy = 0; }
+  const h = dino.duck && onGround() ? 26 : 44, w = dino.duck && onGround() ? 54 : 40;
+  dino.h = h; dino.w = w;
+
+  if (--nextSpawn <= 0) spawn();
+  obstacles.forEach(o => o.x -= speed);
+  obstacles = obstacles.filter(o => o.x + o.w > -10);
+  clouds.forEach(c => { c.x -= speed * 0.2; if (c.x < -60) { c.x = W + 20; c.y = 30 + Math.random() * 70; } });
+
+  const db = hitbox(dino);
+  if (obstacles.some(o => collide(db, hitbox(o)))) {
+    state = 'over'; frame = 0;
+    if (score > hi) { hi = score; try { localStorage.setItem('dinoHi', Math.floor(hi)); } catch {} }
+  }
+}
+
+function px(x, y, w, h) { ctx.fillRect(Math.round(x), Math.round(y), w, h); }
+
+function drawDino() {
+  const { x, y, w, h } = dino, top = y - h;
+  ctx.fillStyle = FG;
+  const leg = state === 'run' && onGround() && Math.floor(frame / 5) % 2;
+  if (dino.duck && onGround()) {
+    px(x, top + 6, 44, 18);          // body
+    px(x + 36, top, 18, 14);         // head
+    px(x + 46, top + 2, 4, 4);       // eye hole
+    ctx.fillStyle = '#fff'; px(x + 44, top + 3, 3, 3); ctx.fillStyle = FG;
+    px(x + 6, top + 22, 6, leg ? 4 : 0 + 2); px(x + 22, top + 22, 6, leg ? 2 : 4);
+  } else {
+    px(x + 6, top + 14, 26, 22);     // body
+    px(x, top + 22, 8, 6);           // tail
+    px(x + 20, top, 20, 16);         // head
+    px(x + 28, top + 14, 10, 6);     // neck-jaw
+    px(x + 28, top + 20, 8, 6);      // arm
+    ctx.fillStyle = '#fff'; px(x + 31, top + 3, 4, 4); ctx.fillStyle = FG;
+    px(x + 10, top + 36, 6, leg ? 6 : 8); px(x + 22, top + 36, 6, leg ? 8 : 6);
+  }
+}
+
+function drawObstacle(o) {
+  ctx.fillStyle = FG;
+  if (o.type === 'cactus') {
+    for (let i = 0; i < o.n; i++) {
+      const cx = o.x + i * 16;
+      px(cx + 5, o.y - o.h, 6, o.h);
+      px(cx, o.y - o.h * 0.65, 5, 4); px(cx, o.y - o.h * 0.65 - 8, 4, 10);
+      px(cx + 11, o.y - o.h * 0.5, 5, 4); px(cx + 12, o.y - o.h * 0.5 - 8, 4, 10);
+    }
+  } else {
+    const flap = Math.floor(frame / 8) % 2, top = o.y - o.h;
+    px(o.x + 6, top + 10, 28, 8);   // body
+    px(o.x, top + 8, 8, 5);         // beak
+    px(o.x + 12, flap ? top : top + 18, 14, 10); // wing
+  }
+}
+
+function drawCloud(c) {
+  ctx.fillStyle = '#ddd'; px(c.x, c.y, 40, 8); px(c.x + 8, c.y - 6, 24, 8);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  clouds.forEach(drawCloud);
+  ctx.fillStyle = FG; px(0, GROUND, W, 2);
+  for (let i = 0; i < 30; i++) { const gx = ((i * 97 - frame * speed) % W + W) % W; px(gx, GROUND + 8 + (i % 3) * 8, 4 + (i % 4) * 3, 2); }
+  obstacles.forEach(drawObstacle);
+  drawDino();
+
+  ctx.fillStyle = FG; ctx.font = 'bold 18px "Courier New", monospace'; ctx.textAlign = 'right';
+  ctx.fillText(`HI ${String(Math.floor(hi)).padStart(5, '0')}  ${String(Math.floor(score)).padStart(5, '0')}`, W - 15, 28);
+  ctx.textAlign = 'center';
+  if (state === 'ready') ctx.fillText('Space 또는 화면 터치로 시작', W / 2, 100);
+  if (state === 'over') {
+    ctx.font = 'bold 30px "Courier New", monospace'; ctx.fillText('G A M E   O V E R', W / 2, 95);
+    ctx.font = '16px "Courier New", monospace'; ctx.fillText('Space 또는 터치로 다시 시작', W / 2, 125);
+  }
+}
+
+(function loop() { update(); draw(); requestAnimationFrame(loop); })();
+</script>
+</body>
+</html>
