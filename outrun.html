@@ -4,33 +4,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>OUT RUN 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; user-select: none; -webkit-user-select: none; touch-action: none;
-    font-family: "Arial Black", Impact, "Helvetica Neue", sans-serif; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; user-select: none; -webkit-user-select: none; touch-action: none; }
   canvas { display: block; }
-  #hud { position: fixed; inset: 0; pointer-events: none; color: #fff; text-shadow: 3px 3px 0 #000, -1px -1px 0 #000; }
-  .lbl { font-size: 13px; color: #ffd400; letter-spacing: 2px; }
-  #tl { position: absolute; top: 12px; left: 16px; }
-  #tc { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); text-align: center; }
-  #tr { position: absolute; top: 12px; right: 16px; text-align: right; }
-  #time { font-size: 54px; line-height: 1; color: #ffd400; }
-  #score { font-size: 22px; }
-  #lap { font-size: 13px; margin-top: 6px; }
-  #stage { font-size: 16px; margin-bottom: 6px; }
-  #map { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
-  #map .row { display: flex; gap: 3px; }
-  #map .c { width: 14px; height: 10px; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.6); }
-  #map .v { background: #ffd400; }
+  #hud { position: fixed; inset: 0; pointer-events: none; color: #fff; font-family: "Press Start 2P", "Courier New", monospace;
+    text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; }
+  #top { position: absolute; top: 12px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
+    gap: clamp(6px, 1.3vw, 18px); font-size: clamp(9px, 1.9vw, 22px); padding: 0 8px; }
+  .tag { font-size: .85em; padding: .35em .45em .3em; border-radius: .45em; background: #fff; border: .16em solid currentColor;
+    box-shadow: 0 0 0 .14em #fff, 3px 3px 0 .14em rgba(0,0,0,.55); text-shadow: none; }
+  .t-time { color: #ff6400; } .t-score { color: #d41bc8; } .t-lap { color: #0a62ff; }
+  #time { color: #ffd800; font-size: 1.7em; min-width: 2.1em; }
+  #score { color: #f2f2f2; min-width: 7.5em; text-align: right; }
+  #lap { color: #a6f5c2; }
+  #map { position: absolute; top: calc(clamp(9px, 1.9vw, 22px) * 3.2 + 18px); right: 14px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  #map .row { display: flex; gap: 2px; }
+  #map .c { width: 11px; height: 7px; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.7); }
+  #map .v { background: #ffd800; }
   #map .cur { background: #ff3030; animation: bl .5s steps(1) infinite; }
-  @keyframes bl { 50% { background: #ffd400; } }
-  #speedo { position: absolute; bottom: 16px; left: 16px; }
-  #speed { font-size: 46px; color: #ff4040; line-height: 1; }
-  #tacho { display: flex; gap: 2px; margin-top: 6px; align-items: flex-end; }
-  #tacho i { width: 7px; background: rgba(255,255,255,.18); display: block; }
-  #gearBox { position: absolute; bottom: 18px; right: 16px; text-align: right; }
-  #gear { font-size: 34px; line-height: 1; }
-  #msg { position: absolute; top: 28%; left: 0; right: 0; text-align: center; font-size: clamp(30px, 7vw, 66px); color: #ffd400; }
-  #sub { position: absolute; top: calc(28% + clamp(44px, 9vw, 86px)); left: 0; right: 0; text-align: center; font-size: clamp(13px, 2.3vw, 20px); line-height: 1.6; padding: 0 16px; }
+  @keyframes bl { 50% { background: #ffd800; } }
+  #speedo { position: absolute; bottom: 14px; left: 16px; }
+  #speed { font-size: clamp(22px, 4.2vw, 46px); color: #ff5418; }
+  .kmh { font-size: clamp(9px, 1.4vw, 15px); color: #ff8840; margin-left: .3em; }
+  #tacho { display: flex; gap: 2px; margin-top: 8px; }
+  #tacho i { width: clamp(6px, 1.1vw, 11px); height: clamp(8px, 1.3vw, 13px); background: rgba(190,190,210,.55); display: block; border-radius: 1px; }
+  #stageBox { position: absolute; right: 16px; bottom: 16px; color: #ffe600; font-size: clamp(12px, 2.6vw, 30px); display: flex; align-items: center; gap: .45em; }
+  #stage { color: #fff; }
+  .flagIcon { width: 1.7em; height: 1.1em; border: 2px solid #fff; box-shadow: 2px 2px 0 #000;
+    background: repeating-conic-gradient(#111 0 25%, #fff 0 50%) 0 0 / .42em .42em; }
+  #gearBox { position: absolute; right: 16px; bottom: calc(26px + clamp(12px, 2.6vw, 30px)); font-size: clamp(10px, 1.6vw, 17px); color: #fff; }
+  #msg { position: absolute; top: 30%; left: 0; right: 0; text-align: center; font-size: clamp(18px, 4.6vw, 48px); color: #ffd800; line-height: 1.3; }
+  #sub { position: absolute; top: calc(30% + clamp(36px, 8vw, 80px)); left: 0; right: 0; text-align: center; font-size: clamp(8px, 1.5vw, 14px); line-height: 2.1; padding: 0 16px; }
   #touch { position: fixed; inset: 0; display: none; pointer-events: none; }
   #touch div { position: absolute; width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,.16);
     border: 2px solid rgba(255,255,255,.5); color: #fff; font: bold 15px Arial; display: flex; align-items: center; justify-content: center;
@@ -39,17 +45,9 @@
   #touch .b1 { bottom: calc(20px + env(safe-area-inset-bottom)); }
   #touch .b2 { bottom: calc(102px + env(safe-area-inset-bottom)); }
   body.touch #touch { display: block; }
-  body.touch #speedo { bottom: calc(190px + env(safe-area-inset-bottom)); }
-  body.touch #gearBox { bottom: calc(190px + env(safe-area-inset-bottom)); }
-  @media (max-width: 640px) {
-    #tr { display: flex; flex-direction: column-reverse; align-items: flex-end; }
-    #stage { font-size: 11px; margin: 6px 0 0; max-width: 34vw; }
-    #time { font-size: 40px; }
-    #score { font-size: 17px; }
-    #speed { font-size: 36px; }
-    #gear { font-size: 26px; }
-    #tacho i { width: 5px; }
-  }
+  body.touch #speedo, body.touch #stageBox { bottom: calc(190px + env(safe-area-inset-bottom)); }
+  body.touch #gearBox { bottom: calc(200px + env(safe-area-inset-bottom) + clamp(12px, 2.6vw, 30px)); }
+  @media (max-width: 640px) { #top { gap: 5px 8px; } #score { min-width: 0; } }
 </style>
 <script type="importmap">
 { "imports": {
@@ -60,11 +58,15 @@
 </head>
 <body>
 <div id="hud">
-  <div id="tl"><div class="lbl">SCORE</div><div id="score">0</div><div id="lap"></div></div>
-  <div id="tc"><div class="lbl">TIME</div><div id="time">75</div></div>
-  <div id="tr"><div id="stage">STAGE 1</div><div id="map"></div></div>
-  <div id="speedo"><div id="speed">0</div><div class="lbl">km/h</div><div id="tacho"></div></div>
-  <div id="gearBox"><div class="lbl">GEAR</div><div id="gear">LOW</div></div>
+  <div id="top">
+    <span class="tag t-time">TIME</span><span id="time">75</span>
+    <span class="tag t-score">SCORE</span><span id="score">0</span>
+    <span class="tag t-lap">LAP</span><span id="lap">0'00"00</span>
+  </div>
+  <div id="map"></div>
+  <div id="speedo"><span id="speed">0</span><span class="kmh">km/h</span><div id="tacho"></div></div>
+  <div id="gearBox">GEAR <span id="gear">LOW</span></div>
+  <div id="stageBox">STAGE <span id="stage">1</span><span class="flagIcon"></span></div>
   <div id="msg">OUT RUN 3D</div>
   <div id="sub"></div>
 </div>
@@ -81,7 +83,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // ═════════════════════════ 설정 ═════════════════════════
-const SEG = 5, ROAD_W = 12, RUMBLE = 1.6, LANES = 3, GW = 420;
+const SEG = 5, ROAD_W = 16, RUMBLE = 1.4, LANES = 4, GW = 420;
 const STAGE_LEN = 900;     // 스테이지 세그먼트 수
 const FORK = 90;           // 갈림길 전 도로가 넓어지는 구간
 const LEVELS = 5;          // 5단계 × 피라미드 = 15 코스, 골 5곳 (원작 구조)
@@ -89,24 +91,25 @@ const MAXS = [55, 82];     // LOW / HIGH 최고속도 → ×3.6 km/h
 const START_TIME = 75;
 const EXTEND = [62, 60, 58, 56];
 
-const T = (name, sky0, sky1, fog, g0, g1, mtn, sun, tree, leaf, dens, extra = '', night = false) =>
-  ({ name, sky: [sky0, sky1], fog, grass: [g0, g1], mtn, sun, tree, leaf, dens, extra, night });
+const T = (name, sky0, sky1, fog, g0, g1, mtn, sun, tree, leaf, dens, extra = '', night = false, o = {}) =>
+  ({ name, sky: [sky0, sky1], fog, grass: [g0, g1], mtn, sun, tree, leaf, dens, extra, night, clouds: !night, ...o });
+const BEACH = { sea: true, noMtn: true, bush: true, road: [0x9c9ca2, 0x97979d], rumble: [0xffffff, 0xe6e6e6] };
 const THEMES = [
-  T('SUNNY BEACH',   0x1f6fe0, 0xbfe6ff, 0xcde9ff, 0x47b347, 0x3da13d, 0x7e9cc4, 0xfff3c4, 'palm',   0x2e9a3a, 0.75, 'bill'),
+  T('SUNNY BEACH',   0x0a6cff, 0x3d95ff, 0xe8dfc8, 0xeee3c6, 0xe7dbbc, 0x7e9cc4, 0xfff8e0, 'palm',   0x2a8a30, 0.9,  '', false, BEACH),
   T('GATEWAY',       0x2f7fe8, 0xd8f0ff, 0xd8eeff, 0x5cbf4a, 0x52b041, 0x6f8fb8, 0xffffff, 'round',  0x3f9a3a, 0.6,  'bill'),
   T('DESERT CANYON', 0x3f86d6, 0xf6dcac, 0xf3d9a8, 0xdcb46c, 0xd0a75f, 0xc97b4a, 0xfff0b0, 'cactus', 0x3f8a3a, 0.3,  'rock'),
   T('OLD TEMPLE',    0x4a7fd0, 0xf0e6c8, 0xeee2c2, 0xc9b98a, 0xbfae7e, 0xa08a6a, 0xfff4d0, 'palm',   0x5a8a3a, 0.4,  'column'),
   T('ALPINE PASS',   0x5a85c0, 0xe4ebf2, 0xe1e8f0, 0xeef3f6, 0xe2e9ee, 0x9aa8c0, 0xffffff, 'pine',   0x2f5e40, 0.6,  'rock'),
   T('WILD FIELDS',   0x3a8ae0, 0xdaf2c8, 0xd6eec4, 0x8cc63f, 0x80b838, 0x7aa070, 0xfff6c0, 'round',  0x4a9a2a, 0.35, 'bill'),
   T('AUTUMN ROAD',   0x3a6fc0, 0xffd7a0, 0xffd9a8, 0xc8762c, 0xba6a25, 0x8c5a6e, 0xffe0a0, 'round',  0xd2691e, 0.7),
-  T('SEASIDE TOWN',  0x2a80e8, 0xc8ecff, 0xccecff, 0xd8c9a0, 0xccbd93, 0x6f8fb8, 0xffffff, 'palm',   0x2e9a3a, 0.5,  'bill'),
+  T('SEASIDE TOWN',  0x1470ff, 0x55a5ff, 0xe4dcc8, 0xe8dcc0, 0xe0d3b5, 0x6f8fb8, 0xffffff, 'palm',   0x2e9a3a, 0.6,  'bill', false, BEACH),
   T('STONE ARCH',    0x4a78c8, 0xf2d2b0, 0xf0cfa8, 0xb8865a, 0xab7a50, 0xa0563a, 0xfff0c0, 'cactus', 0x4a8a3a, 0.25, 'rock'),
-  T('BLUE LAKE',     0x2c6fd0, 0xb8e0ff, 0xbfe3ff, 0x3fa36a, 0x37945f, 0x5a7ab0, 0xffffff, 'pine',   0x24583a, 0.65),
+  T('BLUE LAKE',     0x2c6fd0, 0xb8e0ff, 0xbfe3ff, 0x3fa36a, 0x37945f, 0x5a7ab0, 0xffffff, 'pine',   0x24583a, 0.65, '', false, { sea: true }),
   T('VINEYARD',      0x3a78d8, 0xf8e2b8, 0xf6dfb4, 0x7a9a30, 0x6e8c2a, 0x8a7a9a, 0xffe8a0, 'round',  0x5a8a20, 0.55, 'bill'),
-  T('SUNSET COAST',  0x2a1a5e, 0xff7b54, 0xff9a70, 0x2f7d5a, 0x296f50, 0x553a6e, 0xffb060, 'palm',   0x1f5a40, 0.7),
+  T('SUNSET COAST',  0x2a1a5e, 0xff7b54, 0xff9a70, 0x2f7d5a, 0x296f50, 0x553a6e, 0xffb060, 'palm',   0x1f5a40, 0.7,  '', false, { sea: true, bush: true }),
   T('CITY LIGHTS',   0x101838, 0x6a4a8a, 0x4a3a6a, 0x3a3a48, 0x33333f, 0x2a2a50, 0xffe8c0, 'round',  0x2a4a3a, 0.3,  'bill', true),
   T('SAVANNA',       0x3a88d8, 0xffe0a0, 0xffdca0, 0xd8b048, 0xcca442, 0xb07a40, 0xfff0a0, 'round',  0x6a7a2a, 0.25, 'rock'),
-  T('NIGHT HARBOR',  0x05081a, 0x283a6a, 0x223052, 0x22303a, 0x1d2a33, 0x1a2440, 0xf0f0ff, 'palm',   0x1a3a2a, 0.5,  '', true),
+  T('NIGHT HARBOR',  0x05081a, 0x283a6a, 0x223052, 0x22303a, 0x1d2a33, 0x1a2440, 0xf0f0ff, 'palm',   0x1a3a2a, 0.5,  '', true, { sea: true }),
 ];
 const themeIdx = (L, j) => L * (L + 1) / 2 + j;
 
@@ -116,16 +119,25 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // ═════════════════════════ 렌더러 / 씬 ═════════════════════════
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(innerWidth, innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
+// 레트로 모드: 원작(320×224)처럼 저해상도로 그린 뒤 도트 그대로 확대 — P 키로 HD 전환
+let retro = true;
+function applyRes() {
+  const w = innerWidth, h = innerHeight;
+  const pr = retro ? Math.min(1, Math.sqrt((560 * 330) / (w * h))) : Math.min(devicePixelRatio, 2);
+  renderer.setPixelRatio(pr);
+  renderer.setSize(w, h);
+  renderer.domElement.style.imageRendering = retro ? 'pixelated' : 'auto';
+  renderer.toneMapping = retro ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
+  if (typeof pMat !== 'undefined') pMat.uniforms.scale.value = h * pr * 0.9;
+}
+renderer.toneMapping = THREE.NoToneMapping;
 renderer.toneMappingExposure = 1.05;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(THEMES[0].fog, 160, 900);
+scene.fog = new THREE.Fog(THEMES[0].fog, 260, 1500);
 const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.3, 2600);
 
 const hemi = new THREE.HemisphereLight(0xdfefff, 0x55663a, 1.2);
@@ -157,6 +169,39 @@ const sunMesh = new THREE.Mesh(new THREE.CircleGeometry(90, 48), new THREE.MeshB
 sunMesh.position.copy(sunDir).multiplyScalar(2000);
 sunMesh.lookAt(0, 0, 0);
 far.add(sunMesh);
+// 원작풍 뭉게구름 (캔버스로 그린 스프라이트)
+function cloudTex(sd) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  let r = sd; const rr = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  const blobs = [];
+  for (let k = 0; k < 34; k++) {
+    const x = 70 + rr() * 372, w = 1 - Math.abs(x - 256) / 230;
+    blobs.push([x, 230 - rr() * 150 * w - 20, 26 + rr() * 46 * (0.5 + w)]);
+  }
+  for (const [x, y, rad] of blobs) { g.fillStyle = '#c9d3e2'; g.beginPath(); g.arc(x + 4, y + 7, rad, 0, 7); g.fill(); }
+  for (const [x, y, rad] of blobs) {
+    const gr = g.createRadialGradient(x - rad * 0.3, y - rad * 0.4, rad * 0.1, x, y, rad);
+    gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.75, '#f6f8fc'); gr.addColorStop(1, '#dfe6f0');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad * 0.93, 0, 7); g.fill();
+  }
+  g.globalCompositeOperation = 'destination-out'; g.fillRect(0, 236, 512, 20);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const cloudMats = [11, 222, 3333].map(sd => new THREE.SpriteMaterial({ map: cloudTex(sd), fog: false, transparent: true, depthWrite: false }));
+for (let k = 0; k < 18; k++) {
+  const a = (k / 18) * Math.PI * 2 + rnd() * 0.2, d = 1700 + rnd() * 250, w = 520 + rnd() * 620;
+  const sp = new THREE.Sprite(cloudMats[k % 3]);
+  sp.scale.set(w, w * 0.5, 1);
+  sp.position.set(Math.sin(a) * d, w * 0.2 - 18, -Math.cos(a) * d);
+  far.add(sp);
+}
+// 수평선 바다: 모래 길가가 끝나는 곳 너머로 보이는 띠
+const sea = new THREE.Mesh(new THREE.CylinderGeometry(1500, 1500, 50, 96, 1, true), new THREE.MeshBasicMaterial({ color: 0x2c64e6, fog: false, side: THREE.BackSide }));
+sea.position.y = 2;
+far.add(sea);
+const mtnGroup = new THREE.Group(); far.add(mtnGroup);
 const mtnMat = new THREE.MeshLambertMaterial({ color: THEMES[0].mtn, fog: false, flatShading: true });
 for (let k = 0; k < 46; k++) {
   const a = (k / 46) * Math.PI * 2 + rnd() * 0.1, h = 70 + rnd() * 190, r = 120 + rnd() * 180;
@@ -164,7 +209,7 @@ for (let k = 0; k < 46; k++) {
   const d = 1600 + rnd() * 300;
   m.position.set(Math.sin(a) * d, h / 2 - 10, -Math.cos(a) * d);
   m.rotation.y = rnd() * 6;
-  far.add(m);
+  mtnGroup.add(m);
 }
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(6000, 6000), new THREE.MeshLambertMaterial({ color: THEMES[0].grass[1] }));
 ground.rotation.x = -Math.PI / 2;
@@ -185,7 +230,24 @@ const TREES = {};
     leaves.push(l);
   }
   leaves.push(new THREE.SphereGeometry(0.5, 8, 6).translate(0.4, 10.6, 0.3), new THREE.SphereGeometry(0.5, 8, 6).translate(-0.4, 10.6, -0.2));
-  TREES.palm = { trunk: sh(new THREE.CylinderGeometry(0.28, 0.5, 11, 7).translate(0, 5.5, 0)), crown: sh(merge(...leaves)), tc: 0x8a6440 };
+  {
+    const top = new THREE.Vector3(2.8, 13.5, 0);
+    const trunk = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.2, 7.5, 0), top), 14, 0.36, 7, false);
+    const fronds = [];
+    for (let k = 0; k < 13; k++) {
+      const f = new THREE.PlaneGeometry(7, 1.5, 10, 1), fp = f.attributes.position;
+      for (let v = 0; v < fp.count; v++) {
+        const nx = fp.getX(v) + 3.5, w = fp.getY(v) * (1 - (nx / 7) * 0.75);
+        fp.setXYZ(v, nx, 0.9 * nx * 0.35 - 0.075 * nx * nx, w);
+      }
+      f.rotateZ(-0.15 + (k % 3) * 0.12);
+      f.rotateY((k / 13) * Math.PI * 2 + (k % 2) * 0.2);
+      f.translate(top.x, top.y, top.z);
+      fronds.push(f);
+    }
+    for (let k = 0; k < 3; k++) fronds.push(new THREE.SphereGeometry(0.42, 8, 6).translate(top.x + Math.cos(k * 2.1) * 0.5, top.y - 0.5, Math.sin(k * 2.1) * 0.5));
+    TREES.palm = { trunk: sh(trunk), crown: sh(merge(...fronds)), tc: 0x9a7650, lean: true };
+  }
   TREES.pine = {
     trunk: sh(new THREE.CylinderGeometry(0.3, 0.45, 4, 6).translate(0, 2, 0)),
     crown: sh(merge(new THREE.ConeGeometry(3, 5, 8).translate(0, 5, 0), new THREE.ConeGeometry(2.4, 4.5, 8).translate(0, 7.2, 0), new THREE.ConeGeometry(1.6, 3.6, 8).translate(0, 9.3, 0))),
@@ -205,6 +267,7 @@ const TREES = {};
   };
 }
 const rockGeo = sh(new THREE.DodecahedronGeometry(1, 0));
+const bushGeo = sh(merge(new THREE.IcosahedronGeometry(1.3, 0).translate(0, 0.9, 0), new THREE.IcosahedronGeometry(1.0, 0).translate(1.1, 0.7, 0.3), new THREE.IcosahedronGeometry(0.9, 0).translate(-1.0, 0.6, -0.2), new THREE.IcosahedronGeometry(0.8, 0).translate(0.2, 1.7, 0.1)));
 const columnGeo = sh(merge(new THREE.CylinderGeometry(0.7, 0.8, 8, 10).translate(0, 4, 0), new THREE.BoxGeometry(2, 0.5, 2).translate(0, 8.2, 0), new THREE.BoxGeometry(2, 0.4, 2).translate(0, 0.2, 0)));
 const crowdBodyGeo = sh(merge(
   new THREE.BoxGeometry(0.55, 0.65, 0.3).translate(0, 1.05, 0), new THREE.BoxGeometry(0.45, 0.75, 0.28).translate(0, 0.38, 0),
@@ -338,7 +401,8 @@ class Stage {
     this.len = STAGE_LEN + (this.final ? 260 : 0);
     this.group = new THREE.Group();
     scene.add(this.group);
-    this.innerEnd = new Float32Array(this.len + 1).fill(GW);
+    this.gw = this.theme.sea ? 140 : GW;   // 바다 코스는 길가 모래폭을 좁혀 수평선 바다가 보이게
+    this.innerEnd = new Float32Array(this.len + 1).fill(this.gw);
     this.obstacles = [];
     this.crowds = [];
     this.flags = [];
@@ -388,11 +452,11 @@ class Stage {
   setSibling(sib) {
     for (let k = 0; k <= this.len; k++) {
       const a = this.P[k], b = sib.P[Math.min(k, sib.len)];
-      this.innerEnd[k] = Math.min(GW, Math.hypot(a.x - b.x, a.z - b.z) / 2);
+      this.innerEnd[k] = Math.min(this.gw, Math.hypot(a.x - b.x, a.z - b.z) / 2);
     }
   }
-  leftEnd(i) { return this.side === 1 ? this.innerEnd[i] : GW; }
-  rightEnd(i) { return this.side === -1 ? this.innerEnd[i] : GW; }
+  leftEnd(i) { return this.side === 1 ? this.innerEnd[i] : this.gw; }
+  rightEnd(i) { return this.side === -1 ? this.innerEnd[i] : this.gw; }
   sample(s) {
     const f = clamp(s / SEG, 0, this.len - 0.0001);
     const i = Math.floor(f), t = f - i;
@@ -416,12 +480,13 @@ class Stage {
       c.setHex(hex);
       for (let k = 0; k < 6; k++) col.push(c.r, c.g, c.b);
     };
-    const ROAD = th.night ? [0x4a4a52, 0x44444c] : [0x6e6e72, 0x66666a];
+    const ROAD = th.road || (th.night ? [0x4a4a52, 0x44444c] : [0x6e6e72, 0x66666a]);
+    const RUM = th.rumble || [0xffffff, 0xd8262a];
     for (let i = 0; i < n; i++) {
       const alt = Math.floor(i / 3) % 2;
       const ha = this.halfW(i), hb = this.halfW(i + 1);
       const La = this.leftEnd(i), Lb = this.leftEnd(i + 1), Ra = this.rightEnd(i), Rb = this.rightEnd(i + 1);
-      const rum = alt ? 0xffffff : 0xd8262a;
+      const rum = RUM[alt];
       quad(i, -ha, ha, -hb, hb, ROAD[alt], 0.03);
       if (La > ha + 0.05) quad(i, -Math.min(ha + RUMBLE, La), -ha, -Math.min(hb + RUMBLE, Lb), -hb, rum, 0.03);
       if (Ra > ha + 0.05) quad(i, ha, Math.min(ha + RUMBLE, Ra), hb, Math.min(hb + RUMBLE, Rb), rum, 0.03);
@@ -434,7 +499,7 @@ class Stage {
         }
       if (this.fork && i > n - FORK * 0.6) quad(i, -0.25, 0.25, -0.25, 0.25, 0xffd400, 0.06); // 분기 중앙선
       const checker = (!this.parent && i === 20) || (this.final && i === STAGE_LEN);
-      if (checker) for (let k = 0; k < 12; k++) {
+      if (checker) for (let k = 0; k < ROAD_W; k++) {
         const x0 = -ROAD_W + k * 2;
         quad(i, x0, x0 + 2, x0, x0 + 2, k % 2 ? 0x111111 : 0xffffff, 0.08);
       }
@@ -477,16 +542,38 @@ class Stage {
     if (trees.length) {
       const T0 = TREES[th.tree];
       const trunks = new THREE.InstancedMesh(T0.trunk, new THREE.MeshStandardMaterial({ color: T0.tc, roughness: 0.9 }), trees.length);
-      const crowns = new THREE.InstancedMesh(T0.crown, new THREE.MeshStandardMaterial({ color: th.tree === 'cactus' ? T0.tc : th.leaf, roughness: 0.75, flatShading: true }), trees.length);
+      const crowns = new THREE.InstancedMesh(T0.crown, new THREE.MeshStandardMaterial({ color: th.tree === 'cactus' ? T0.tc : th.leaf, roughness: 0.75, flatShading: true, side: THREE.DoubleSide }), trees.length);
       trees.forEach((t, k) => {
         this.at(t.i, t.x, v);
-        e.set((rnd() - 0.5) * 0.2, rnd() * 6.28, (rnd() - 0.5) * 0.2);
-        const s = 0.8 + rnd() * 0.5;
+        // 야자수는 도로 바깥쪽으로 기울어짐 (원작 구도)
+        const yaw = T0.lean ? (t.x > 0 ? -this.H[t.i] : Math.PI - this.H[t.i]) + (rnd() - 0.5) * 0.9 : rnd() * 6.28;
+        e.set((rnd() - 0.5) * 0.12, yaw, (rnd() - 0.5) * 0.12);
+        const s = T0.lean ? 0.95 + rnd() * 0.4 : 0.8 + rnd() * 0.5;
         m4.compose(v, q.setFromEuler(e), sc.set(s, s, s));
         trunks.setMatrixAt(k, m4); crowns.setMatrixAt(k, m4);
       });
       trunks.castShadow = crowns.castShadow = true;
       grp.add(trunks, crowns);
+    }
+
+    // 길가 덤불 (해변 코스)
+    if (th.bush) {
+      const list = [];
+      for (let i = 30; i < n - 6; i += 4) {
+        if (rnd() > 0.55 || inRange(i, startCrowd) || inRange(i, cpCrowd) || inRange(i, goalCrowd)) continue;
+        const side = rnd() < 0.5 ? -1 : 1, x = side * (this.halfW(i) + RUMBLE + 5 + rnd() * 40);
+        if (freeAt(i, x)) list.push({ i, x });
+      }
+      const im = new THREE.InstancedMesh(bushGeo, new THREE.MeshStandardMaterial({ color: 0x3f9a34, roughness: 0.9, flatShading: true }), Math.max(1, list.length));
+      im.count = list.length;
+      list.forEach((b, k) => {
+        this.at(b.i, b.x, v);
+        const s = 0.9 + rnd() * 1.6;
+        m4.compose(v, q.setFromEuler(e.set(0, rnd() * 6, 0)), sc.set(s, s * 0.8, s));
+        im.setMatrixAt(k, m4);
+      });
+      im.castShadow = true;
+      grp.add(im);
     }
 
     // 바위 / 기둥
@@ -675,7 +762,7 @@ function pointOn(st, s, x, out) {
 function makePlayerCar() {
   const g = new THREE.Group();
   g.rotation.order = 'YXZ';
-  const paint = new THREE.MeshPhysicalMaterial({ color: 0xc8101a, metalness: 0.4, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08 });
+  const paint = new THREE.MeshPhysicalMaterial({ color: 0xe8352e, metalness: 0.25, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 });
   const dark = std(0x141414, { roughness: 0.6 });
   const chrome = std(0xdddddd, { metalness: 1, roughness: 0.2 });
   const add = (geo, mat, x, y, z, parent = g) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
@@ -701,7 +788,7 @@ function makePlayerCar() {
   for (const sx of [-1, 1]) add(new THREE.BoxGeometry(0.18, 0.1, 0.12), paint, sx * 1.17, 0.98, -0.32);
   add(new THREE.BoxGeometry(1.9, 0.1, 0.35), dark, 0, 0.78, 0.2);
   // 헤드라이트(팝업 닫힘) & 번호판
-  add(new THREE.BoxGeometry(0.6, 0.18, 0.05), new THREE.MeshBasicMaterial({ map: textTex('OUTRUN', '#ffd400', '#111', 256, 64, 40) }), 0, 0.38, 2.47);
+  add(new THREE.BoxGeometry(0.6, 0.18, 0.05), new THREE.MeshBasicMaterial({ map: textTex('OUTRUN', '#f2f2f2', '#222', 256, 64, 40) }), 0, 0.38, 2.47);
   // 핸들
   const wheel = new THREE.Group(); wheel.position.set(-0.45, 1.08, -0.15); wheel.rotation.x = -0.9; g.add(wheel);
   add(new THREE.TorusGeometry(0.19, 0.03, 8, 20), dark, 0, 0, 0, wheel);
@@ -717,7 +804,7 @@ function makePlayerCar() {
     g.userData.wheels.push(w);
   }
   // 운전자 & 금발 동승자
-  const driver = makeFigure({ shirt: 0xf4f4f4, hair: 0x2a1a0e, seated: true, glasses: true });
+  const driver = makeFigure({ shirt: 0x3f6fd8, hair: 0x7a4418, seated: true });
   driver.position.set(-0.45, 0.82, 0.3);
   const pass = makeFigure({ shirt: 0xff6fa8, hair: 0xffd860, skin: 0xf6d4b4, seated: true, longHair: true });
   pass.position.set(0.45, 0.8, 0.3); pass.scale.setScalar(0.94);
@@ -825,6 +912,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') shiftGear();
   if (e.code === 'Enter') startOrRestart();
   if (e.code === 'KeyM') toggleMusic();
+  if (e.code === 'KeyP') { retro = !retro; applyRes(); }
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 // 터치 버튼은 실제로 화면을 터치했을 때만 표시 (PC에서 키보드를 쓰면 숨김)
@@ -939,7 +1027,7 @@ const msg = $('msg'), sub = $('sub');
     map.appendChild(row);
   }
   const tacho = $('tacho');
-  for (let k = 0; k < 20; k++) { const b = document.createElement('i'); b.style.height = (6 + k * 0.9) + 'px'; tacho.appendChild(b); }
+  for (let k = 0; k < 20; k++) tacho.appendChild(document.createElement('i'));
 }
 function updateMap() {
   for (let L = 0; L < LEVELS; L++) for (let j = 0; j <= L; j++) {
@@ -968,7 +1056,7 @@ function reset() {
 }
 function showTitle() {
   msg.textContent = 'OUT RUN 3D';
-  sub.innerHTML = `♪ ◀ ${SONGS[songIdx].name} ▶ ♪<br>ENTER / 화면 터치로 시작 (모바일: ◀▶ 버튼으로 음악 선택)<br>←→ 핸들 · ↑ 가속 · ↓ 브레이크 · SPACE 기어(LOW/HIGH) · M 음악<br>체크포인트 갈림길에서 왼쪽/오른쪽 길을 골라 5개 골 중 하나로!`;
+  sub.innerHTML = `♪ ◀ ${SONGS[songIdx].name} ▶ ♪<br>ENTER / 화면 터치로 시작 (모바일: ◀▶ 버튼으로 음악 선택)<br>←→ 핸들 · ↑ 가속 · ↓ 브레이크 · SPACE 기어(LOW/HIGH) · M 음악 · P 도트/HD<br>체크포인트 갈림길에서 왼쪽/오른쪽 길을 골라 5개 골 중 하나로!`;
   msgT = 0;
 }
 function startOrRestart() {
@@ -1007,7 +1095,7 @@ function emitBurst() {
   const c = cur.theme.grass[0];
   for (let k = 0; k < 60; k++) {
     playerCar.localToWorld(_w.set((Math.random() - 0.5) * 2, 0.3, (Math.random() - 0.5) * 4));
-    emit(_w, (Math.random() - 0.5) * 10, 2 + Math.random() * 6, (Math.random() - 0.5) * 10, k % 3 ? c : 0xcccccc, 1.2, 3, 1.4, 0.7);
+    emit(_w, (Math.random() - 0.5) * 10, 2 + Math.random() * 6, (Math.random() - 0.5) * 10, k % 3 ? c : 0xcccccc, 0.7, 1.8, 1.2, 0.55);
   }
 }
 
@@ -1170,10 +1258,13 @@ function render(dt) {
   skyMat.uniforms.top.value.lerp(tgt.setHex(th.sky[0]), k);
   skyMat.uniforms.bottom.value.lerp(tgt.setHex(th.sky[1]), k);
   mtnMat.color.lerp(tgt.setHex(th.mtn), k);
+  mtnGroup.visible = !th.noMtn;
+  sea.visible = !!th.sea;
+  for (const cm of cloudMats) cm.opacity += ((th.clouds ? 1 : 0) - cm.opacity) * k;
   sunMesh.material.color.lerp(tgt.setHex(th.sun), k);
   ground.material.color.lerp(tgt.setHex(th.grass[1]), k);
-  sunLight.intensity += ((th.night ? 0.5 : 2.4) - sunLight.intensity) * k;
-  hemi.intensity += ((th.night ? 0.55 : 1.2) - hemi.intensity) * k;
+  sunLight.intensity += ((th.night ? 0.5 : retro ? 2.6 : 2.4) - sunLight.intensity) * k;
+  hemi.intensity += ((th.night ? 0.55 : retro ? 2.3 : 1.2) - hemi.intensity) * k;
   sunLight.color.lerp(tgt.setHex(th.name === 'SUNSET COAST' ? 0xffa070 : 0xfff2dd), k);
 
   // 플레이어 차
@@ -1235,7 +1326,7 @@ function render(dt) {
       }
     }
   }
-  if (p.crashT > 1.4 && Math.random() < 0.6) { playerCar.localToWorld(_w.set(0, 0.2, 0)); emit(_w, (Math.random() - 0.5) * 6, 2 + Math.random() * 3, (Math.random() - 0.5) * 6, th.grass[0], 1, 3, 1.2, 0.6); }
+  if (p.crashT > 1.4 && Math.random() < 0.6) { playerCar.localToWorld(_w.set(0, 0.2, 0)); emit(_w, (Math.random() - 0.5) * 6, 2 + Math.random() * 3, (Math.random() - 0.5) * 6, th.grass[0], 0.6, 1.6, 1.0, 0.45); }
   // 골 꽃가루
   if (state === 'goal' && overT < 8) {
     const CONF = [0xff3b3b, 0xffd400, 0x2a62d8, 0x1f9a5a, 0xff7ab0, 0xffffff];
@@ -1282,11 +1373,11 @@ function hud() {
   $('speed').textContent = Math.round(player.speed * 3.6);
   $('gear').textContent = player.gear ? 'HIGH' : 'LOW';
   $('gear').style.color = player.gear ? '#ff4040' : '#fff';
-  $('stage').textContent = `STAGE ${cur.level + 1} · ${cur.theme.name}`;
+  $('stage').textContent = cur.level + 1;
   const lt = lapT;
-  $('lap').textContent = `LAP ${Math.floor(lt / 60)}'${String(Math.floor(lt % 60)).padStart(2, '0')}"${String(Math.floor((lt % 1) * 100)).padStart(2, '0')}`;
+  $('lap').textContent = `${Math.floor(lt / 60)}'${String(Math.floor(lt % 60)).padStart(2, '0')}"${String(Math.floor((lt % 1) * 100)).padStart(2, '0')}`;
   const rpm = clamp(player.speed / MAXS[player.gear], 0, 1), lit = Math.round(rpm * tachoBars.length);
-  tachoBars.forEach((b, k) => (b.style.background = k < lit ? (k > 15 ? '#ff3030' : k > 10 ? '#ffd400' : '#40ff60') : 'rgba(255,255,255,.18)'));
+  tachoBars.forEach((b, k) => (b.style.background = k < lit ? (k > 16 ? '#ff4040' : k > 11 ? '#ffd800' : '#5cff8a') : 'rgba(190,190,210,.55)'));
 }
 function updateEngine() {
   if (!actx) return;
@@ -1310,9 +1401,9 @@ function loop() {
 }
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-  pMat.uniforms.scale.value = innerHeight * 0.9;
+  applyRes();
 });
+applyRes();
 reset();
 showTitle();
 window.__game = { player, get state() { return state; }, get cur() { return cur; }, keys };
