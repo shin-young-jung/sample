@@ -35,6 +35,16 @@
   .flagIcon { width: 1.7em; height: 1.1em; border: 2px solid #fff; box-shadow: 2px 2px 0 #000;
     background: repeating-conic-gradient(#111 0 25%, #fff 0 50%) 0 0 / .42em .42em; }
   #gearBox { position: absolute; right: 16px; bottom: calc(26px + clamp(12px, 2.6vw, 30px)); font-size: clamp(10px, 1.6vw, 17px); color: #fff; }
+  #radio { position: absolute; left: 50%; bottom: 13%; transform: translateX(-50%); width: min(560px, 92vw); text-align: center; }
+  #radio .rt { color: #ffd800; font-size: clamp(10px, 1.9vw, 18px); margin-bottom: 10px; }
+  #radio .rp { position: relative; height: 92px; border-radius: 10px; background: linear-gradient(#3a3a3e, #1c1c20); border: 3px solid #888; box-shadow: inset 0 2px 0 #666, 0 6px 0 #000; }
+  #radio .rs { position: absolute; left: 20%; right: 20%; top: 14px; height: 34px; background: linear-gradient(#f6e6a8, #e2c870); border: 2px solid #222;
+    background-image: repeating-linear-gradient(90deg, #222 0 2px, transparent 2px 14px), linear-gradient(#f6e6a8, #e2c870); background-size: 100% 10px, 100% 100%; background-repeat: no-repeat; }
+  #rn { position: absolute; top: 10px; width: 4px; height: 42px; background: #e02020; transition: left .35s; box-shadow: 0 0 6px #f44; }
+  #radio .rl { position: absolute; left: 20%; right: 20%; top: 56px; display: flex; justify-content: space-between; font-size: clamp(6px, 1.05vw, 10px); color: #fff; }
+  #radio .rl span.on { color: #ffd800; }
+  #radio .rk { position: absolute; top: 20px; left: 4%; width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(#bbb, #555); border: 2px solid #222; }
+  #radio .rk.r { left: auto; right: 4%; }
   #msg { position: absolute; top: 30%; left: 0; right: 0; text-align: center; font-size: clamp(18px, 4.6vw, 48px); color: #ffd800; line-height: 1.3; }
   #sub { position: absolute; top: calc(30% + clamp(36px, 8vw, 80px)); left: 0; right: 0; text-align: center; font-size: clamp(8px, 1.5vw, 14px); line-height: 2.1; padding: 0 16px; }
   #touch { position: fixed; inset: 0; display: none; pointer-events: none; }
@@ -67,6 +77,8 @@
   <div id="speedo"><span id="speed">0</span><span class="kmh">km/h</span><div id="tacho"></div></div>
   <div id="gearBox">GEAR <span id="gear">LOW</span></div>
   <div id="stageBox">STAGE <span id="stage">1</span><span class="flagIcon"></span></div>
+  <div id="radio"><div class="rt">SELECT MUSIC BY STEERING</div>
+    <div class="rp"><div class="rs"></div><div id="rn"></div><div class="rl" id="rl"></div><div class="rk"></div><div class="rk r"></div></div></div>
   <div id="msg">OUT RUN 3D</div>
   <div id="sub"></div>
 </div>
@@ -93,23 +105,23 @@ const EXTEND = [62, 60, 58, 56];
 
 const T = (name, sky0, sky1, fog, g0, g1, mtn, sun, tree, leaf, dens, extra = '', night = false, o = {}) =>
   ({ name, sky: [sky0, sky1], fog, grass: [g0, g1], mtn, sun, tree, leaf, dens, extra, night, clouds: !night, ...o });
-const BEACH = { sea: true, noMtn: true, bush: true, road: [0x9c9ca2, 0x97979d], rumble: [0xffffff, 0xe6e6e6] };
+const BEACH = { bush: true, road: [0x9c9ca2, 0x97979d], rumble: [0xffffff, 0xe6e6e6] };
 const THEMES = [
-  T('SUNNY BEACH',   0x0a6cff, 0x3d95ff, 0xe8dfc8, 0xeee3c6, 0xe7dbbc, 0x7e9cc4, 0xfff8e0, 'palm',   0x2a8a30, 0.9,  '', false, BEACH),
-  T('GATEWAY',       0x2f7fe8, 0xd8f0ff, 0xd8eeff, 0x5cbf4a, 0x52b041, 0x6f8fb8, 0xffffff, 'round',  0x3f9a3a, 0.6,  'bill'),
-  T('DESERT CANYON', 0x3f86d6, 0xf6dcac, 0xf3d9a8, 0xdcb46c, 0xd0a75f, 0xc97b4a, 0xfff0b0, 'cactus', 0x3f8a3a, 0.3,  'rock'),
-  T('OLD TEMPLE',    0x4a7fd0, 0xf0e6c8, 0xeee2c2, 0xc9b98a, 0xbfae7e, 0xa08a6a, 0xfff4d0, 'palm',   0x5a8a3a, 0.4,  'column'),
-  T('ALPINE PASS',   0x5a85c0, 0xe4ebf2, 0xe1e8f0, 0xeef3f6, 0xe2e9ee, 0x9aa8c0, 0xffffff, 'pine',   0x2f5e40, 0.6,  'rock'),
-  T('WILD FIELDS',   0x3a8ae0, 0xdaf2c8, 0xd6eec4, 0x8cc63f, 0x80b838, 0x7aa070, 0xfff6c0, 'round',  0x4a9a2a, 0.35, 'bill'),
-  T('AUTUMN ROAD',   0x3a6fc0, 0xffd7a0, 0xffd9a8, 0xc8762c, 0xba6a25, 0x8c5a6e, 0xffe0a0, 'round',  0xd2691e, 0.7),
-  T('SEASIDE TOWN',  0x1470ff, 0x55a5ff, 0xe4dcc8, 0xe8dcc0, 0xe0d3b5, 0x6f8fb8, 0xffffff, 'palm',   0x2e9a3a, 0.6,  'bill', false, BEACH),
-  T('STONE ARCH',    0x4a78c8, 0xf2d2b0, 0xf0cfa8, 0xb8865a, 0xab7a50, 0xa0563a, 0xfff0c0, 'cactus', 0x4a8a3a, 0.25, 'rock'),
-  T('BLUE LAKE',     0x2c6fd0, 0xb8e0ff, 0xbfe3ff, 0x3fa36a, 0x37945f, 0x5a7ab0, 0xffffff, 'pine',   0x24583a, 0.65, '', false, { sea: true }),
-  T('VINEYARD',      0x3a78d8, 0xf8e2b8, 0xf6dfb4, 0x7a9a30, 0x6e8c2a, 0x8a7a9a, 0xffe8a0, 'round',  0x5a8a20, 0.55, 'bill'),
-  T('SUNSET COAST',  0x2a1a5e, 0xff7b54, 0xff9a70, 0x2f7d5a, 0x296f50, 0x553a6e, 0xffb060, 'palm',   0x1f5a40, 0.7,  '', false, { sea: true, bush: true }),
-  T('CITY LIGHTS',   0x101838, 0x6a4a8a, 0x4a3a6a, 0x3a3a48, 0x33333f, 0x2a2a50, 0xffe8c0, 'round',  0x2a4a3a, 0.3,  'bill', true),
-  T('SAVANNA',       0x3a88d8, 0xffe0a0, 0xffdca0, 0xd8b048, 0xcca442, 0xb07a40, 0xfff0a0, 'round',  0x6a7a2a, 0.25, 'rock'),
-  T('NIGHT HARBOR',  0x05081a, 0x283a6a, 0x223052, 0x22303a, 0x1d2a33, 0x1a2440, 0xf0f0ff, 'palm',   0x1a3a2a, 0.5,  '', true, { sea: true }),
+  T('COCONUT BEACH',    0x0a6cff, 0x3d95ff, 0xe8dfc8, 0xeee3c6, 0xe7dbbc, 0, 0, 'palm',   0x2a8a30, 0.9,  '', false, { ...BEACH, pano: 'beach' }),
+  T('GATEWAY',          0x1e78f0, 0x8cc4ff, 0x8cc86a, 0x63c24e, 0x58b444, 0, 0, 'round',  0x3f9a3a, 0.3,  '', false, { pano: 'hills', gate: true }),
+  T("DEVIL'S CANYON",   0x2f7fe0, 0x9cc8f0, 0xc89060, 0xc8905a, 0xbb8450, 0, 0, 'cactus', 0x4a8a3a, 0.12, 'rock', false, { pano: 'canyon', cliff: 'R' }),
+  T('DESOLATION HILL',  0x3a88e0, 0xc0dcf0, 0xd8c48a, 0xd6be82, 0xcab276, 0, 0, 'round',  0x7a8a3a, 0.12, 'rock', false, { pano: 'desert' }),
+  T('ALPS',             0x2a70d8, 0xc8e0f8, 0xe8eef4, 0xf2f6f8, 0xe6edf2, 0, 0, 'pine',   0x2f5e40, 0.6,  'rock', false, { pano: 'alps' }),
+  T('CLOUDY MOUNTAIN',  0x8a9cb0, 0xd0d6dc, 0xc4ccd4, 0x5a8a5a, 0x527f52, 0, 0, 'pine',   0x24583a, 0.7,  '', false, { pano: 'alps', cloudy: true, fogNear: 50, fogFar: 520 }),
+  T('WHEAT FIELD',      0x2f80f0, 0xb8dcff, 0xe0c870, 0xe6c45a, 0xdab852, 0, 0, 'round',  0x4a8a2a, 0.12, '', false, { pano: 'fields', windmill: true }),
+  T('OLD CAPITAL',      0x3a80e0, 0xd8e8f8, 0xd8cfb8, 0xc9bd96, 0xbfb28a, 0, 0, 'pine',   0x2f5a3a, 0.25, 'column', false, { pano: 'ruins' }),
+  T('WILDERNESS',       0x3a84d8, 0xe8d0a8, 0xc8a070, 0xb88a5a, 0xab7e50, 0, 0, 'cactus', 0x4a8a3a, 0.2,  'rock', false, { pano: 'canyon', cliff: 'L' }),
+  T('AUTUMN FOREST',    0x3a6fc0, 0xffd7a0, 0xd8905a, 0xc8762c, 0xba6a25, 0, 0, 'round',  0xd2691e, 0.8,  '', false, { pano: 'forest' }),
+  T('DEATH VALLEY',     0x4a88d0, 0xf0d8a8, 0xd8a868, 0xdcae6a, 0xd0a25e, 0, 0, 'cactus', 0x4a8a3a, 0.15, 'rock', false, { pano: 'canyon', cliff: 'both' }),
+  T('DESERT',           0x2f84e8, 0xf8e0b0, 0xeed49a, 0xf0d8a0, 0xe8cf94, 0, 0, 'cactus', 0x3f8a3a, 0.25, '', false, { pano: 'desert' }),
+  T('LAKESIDE',         0x2c6fd0, 0xb8e0ff, 0x9cc8a8, 0x3fa36a, 0x37945f, 0, 0, 'pine',   0x24583a, 0.6,  '', false, { pano: 'lake' }),
+  T('VINEYARD',         0x3a78d8, 0xf8e2b8, 0xa8b870, 0x7a9a30, 0x6e8c2a, 0, 0, 'round',  0x5a8a20, 0.5,  '', false, { pano: 'fields', bush: true }),
+  T('SUNSET COAST',     0x2a1a5e, 0xff7b54, 0xc8786a, 0xd8b890, 0xceae86, 0, 0, 'palm',   0x1f5a40, 0.7,  '', false, { ...BEACH, pano: 'beach', sunset: true }),
 ];
 const themeIdx = (L, j) => L * (L + 1) / 2 + j;
 
@@ -165,51 +177,149 @@ scene.add(sky);
 const far = new THREE.Group();
 scene.add(far);
 const sunDir = new THREE.Vector3(0.25, 0.16, -1).normalize();
-const sunMesh = new THREE.Mesh(new THREE.CircleGeometry(90, 48), new THREE.MeshBasicMaterial({ color: THEMES[0].sun, fog: false }));
-sunMesh.position.copy(sunDir).multiplyScalar(2000);
-sunMesh.lookAt(0, 0, 0);
-far.add(sunMesh);
-// 원작풍 뭉게구름 (캔버스로 그린 스프라이트)
-function cloudTex(sd) {
-  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
-  const g = c.getContext('2d');
-  let r = sd; const rr = () => (r = (r * 16807) % 2147483647) / 2147483647;
-  const blobs = [];
-  for (let k = 0; k < 34; k++) {
-    const x = 70 + rr() * 372, w = 1 - Math.abs(x - 256) / 230;
-    blobs.push([x, 230 - rr() * 150 * w - 20, 26 + rr() * 46 * (0.5 + w)]);
+// 원작식 2D 파노라마 배경 (코스별로 캔버스에 그려 원통에 입힘 — 커브를 돌면 원작처럼 배경이 옆으로 흐름)
+const D2R = Math.PI / 180, PANO_R = 1800, PANO_TOP = 17, PANO_BOT = -3, PW = 4096, PH = 512;
+const tTop = Math.tan(PANO_TOP * D2R), tBot = Math.tan(PANO_BOT * D2R);
+const PANO_HY = Math.round(PH * tTop / (tTop - tBot));       // 캔버스상의 수평선 위치
+function panoTex(th) {
+  const c = document.createElement('canvas'); c.width = PW; c.height = PH;
+  const g = c.getContext('2d'), HY = PANO_HY;
+  let sd = 7 + th.name.length * 131; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const wrap = fn => { fn(0); fn(-PW); fn(PW); };
+  const hex = h => '#' + h.toString(16).padStart(6, '0');
+  const ridge = (base, amp, freq, color, so = 0, jag = 0) => {
+    g.fillStyle = color; g.beginPath(); g.moveTo(0, PH);
+    for (let x = 0; x <= PW; x += 8) {
+      const t = x / PW * Math.PI * 2;
+      let y = base - amp * (0.5 + 0.3 * Math.sin(t * freq + so) + 0.2 * Math.sin(t * freq * 3 + so * 3));
+      if (jag) y -= Math.abs(Math.sin(t * freq * 9 + so)) * jag;
+      g.lineTo(x, y);
+    }
+    g.lineTo(PW, PH); g.closePath(); g.fill();
+  };
+  const cloudBank = (n, yBase, size, light = '#ffffff', mid = '#eef2f8', shade = '#c8d2e0') => {
+    for (let k = 0; k < n; k++) {
+      const cx = r() * PW, w = size * (0.6 + r() * 0.9), blobs = [];
+      for (let b = 0; b < 26; b++) {
+        const u = (r() - 0.5) * 2, x = cx + u * w, hgt = (1 - Math.abs(u)) * w * 0.55;
+        blobs.push([x, yBase - r() * hgt - 8, 18 + r() * w * 0.16 * (1.2 - Math.abs(u))]);
+      }
+      wrap(off => {
+        for (const [x, y, rad] of blobs) { g.fillStyle = shade; g.beginPath(); g.arc(x + off + 3, y + 6, rad, 0, 7); g.fill(); }
+        for (const [x, y, rad] of blobs) {
+          const gr = g.createRadialGradient(x + off - rad * 0.35, y - rad * 0.45, rad * 0.1, x + off, y, rad);
+          gr.addColorStop(0, light); gr.addColorStop(0.7, mid); gr.addColorStop(1, shade);
+          g.fillStyle = gr; g.beginPath(); g.arc(x + off, y, rad * 0.94, 0, 7); g.fill();
+        }
+      });
+    }
+  };
+  const kind = th.pano, ground = hex(th.fog);
+  if (kind === 'beach') {
+    if (th.sunset) { g.fillStyle = '#ffcf70'; g.beginPath(); g.arc(PW * 0.52, HY - 40, 70, 0, 7); g.fill(); }
+    cloudBank(16, HY - 10, 260, th.sunset ? '#ffd8c0' : '#ffffff', th.sunset ? '#f8a890' : '#f1f5fa', th.sunset ? '#9a5a8a' : '#c6d0de');
+    const sea0 = th.sunset ? '#4a3a8a' : '#2c64e6', sea1 = th.sunset ? '#e89070' : '#5a92f4';
+    g.fillStyle = sea0; g.fillRect(0, HY - 16, PW, PH);
+    g.fillStyle = sea1; for (let y = HY - 14; y < PH; y += 5) for (let k = 0; k < 40; k++) g.fillRect(r() * PW, y, 10 + r() * 40, 1);
+    for (let k = 0; k < 7; k++) { const x = r() * PW, w = 80 + r() * 220; g.fillStyle = th.sunset ? '#3a2a4a' : '#3f8a4a'; g.beginPath(); g.ellipse(x, HY - 16, w, 6 + r() * 8, 0, Math.PI, 0); g.fill(); }
+    for (let k = 0; k < 14; k++) { const x = r() * PW, y = HY - 4 + r() * 20; g.fillStyle = '#fff'; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 5, y - 16); g.lineTo(x + 10, y); g.fill(); g.fillStyle = '#c33'; g.fillRect(x - 2, y, 14, 2); }
+  } else if (kind === 'hills') {
+    cloudBank(9, HY - 150, 160);
+    ridge(HY - 20, 90, 5, '#8cb8a0', 1);
+    ridge(HY, 60, 7, '#6aaa58', 2);
+    for (let k = 0; k < 60; k++) { const x = r() * PW, y = HY - 10 - r() * 30; g.fillStyle = '#3f7a34'; g.beginPath(); g.arc(x, y, 6 + r() * 8, 0, 7); g.fill(); }
+    ridge(HY + 10, 26, 11, '#58a046', 3);
+  } else if (kind === 'canyon') {
+    cloudBank(6, HY - 230, 140);
+    const mesa = (n, base, hmin, hmax, c0, c1) => {
+      for (let k = 0; k < n; k++) {
+        const x = r() * PW, w = 120 + r() * 380, h = hmin + r() * (hmax - hmin);
+        wrap(off => {
+          g.fillStyle = c0; g.beginPath(); g.moveTo(x + off - w / 2 - 30, base); g.lineTo(x + off - w / 2, base - h); g.lineTo(x + off + w / 2, base - h); g.lineTo(x + off + w / 2 + 30, base); g.fill();
+          g.fillStyle = c1; g.fillRect(x + off + w * 0.15, base - h, w * 0.35, h);
+          g.fillStyle = 'rgba(0,0,0,.12)'; for (let q = 1; q < 5; q++) g.fillRect(x + off - w / 2, base - h + h * q / 5, w, 3);
+        });
+      }
+    };
+    mesa(14, HY + 6, 80, 230, '#b8603a', '#d88454');
+    mesa(10, HY + 6, 40, 110, '#9a4a2a', '#c06a40');
+  } else if (kind === 'desert') {
+    cloudBank(5, HY - 200, 130);
+    ridge(HY - 6, 50, 4, '#d8a870', 4);
+    for (let k = 0; k < 6; k++) { const x = r() * PW, w = 100 + r() * 160, h = 50 + r() * 70; wrap(off => { g.fillStyle = '#c47a4a'; g.fillRect(x + off - w / 2, HY - h, w, h); g.fillStyle = '#e09a62'; g.fillRect(x + off - w / 2, HY - h, w * 0.4, h); }); }
+    ridge(HY + 6, 30, 9, '#e8c890', 5);
+    ridge(HY + 14, 16, 15, '#dcb878', 6);
+  } else if (kind === 'alps') {
+    cloudBank(th.cloudy ? 18 : 7, th.cloudy ? HY - 60 : HY - 260, 180, th.cloudy ? '#e4e8ec' : '#fff', th.cloudy ? '#cdd3da' : '#eef2f8', th.cloudy ? '#a8b0ba' : '#c6d0de');
+    const peaks = (n, base, hmin, hmax, rock, snow) => {
+      for (let k = 0; k < n; k++) {
+        const x = r() * PW, h = hmin + r() * (hmax - hmin), w = h * (1.1 + r() * 0.8);
+        wrap(off => {
+          const X = x + off;
+          g.fillStyle = rock; g.beginPath(); g.moveTo(X - w, base); g.lineTo(X - w * 0.2, base - h * 0.85); g.lineTo(X, base - h); g.lineTo(X + w * 0.3, base - h * 0.8); g.lineTo(X + w, base); g.fill();
+          g.fillStyle = snow; g.beginPath(); g.moveTo(X - w * 0.42, base - h * 0.55); g.lineTo(X - w * 0.2, base - h * 0.85); g.lineTo(X, base - h); g.lineTo(X + w * 0.3, base - h * 0.8);
+          g.lineTo(X + w * 0.5, base - h * 0.5); g.lineTo(X + w * 0.25, base - h * 0.6); g.lineTo(X + w * 0.05, base - h * 0.5); g.lineTo(X - w * 0.15, base - h * 0.62); g.fill();
+        });
+      }
+    };
+    peaks(16, HY + 4, 150, 330, th.cloudy ? '#7a8496' : '#6a7a98', '#ffffff');
+    peaks(14, HY + 4, 70, 150, th.cloudy ? '#6a7484' : '#56688a', '#f2f6fa');
+    for (let k = 0; k < 220; k++) { const x = r() * PW; g.fillStyle = '#2f5a40'; g.beginPath(); g.moveTo(x, HY + 2); g.lineTo(x + 5, HY - 14 - r() * 10); g.lineTo(x + 10, HY + 2); g.fill(); }
+    if (th.cloudy) { g.fillStyle = 'rgba(210,216,224,.55)'; g.fillRect(0, HY - 120, PW, 140); }
+  } else if (kind === 'fields') {
+    cloudBank(10, HY - 170, 170);
+    ridge(HY - 6, 50, 4, '#8cae78', 7);
+    ridge(HY + 4, 30, 8, th.name === 'VINEYARD' ? '#6e8c2a' : '#d8b44c', 8);
+    for (let k = 0; k < 16; k++) { const x = r() * PW, y = HY - 6 - r() * 14; g.fillStyle = '#eee'; g.fillRect(x, y - 24, 6, 24); g.strokeStyle = '#ddd'; g.lineWidth = 2; for (let b = 0; b < 4; b++) { const a = b * Math.PI / 2 + r(); g.beginPath(); g.moveTo(x + 3, y - 24); g.lineTo(x + 3 + Math.cos(a) * 14, y - 24 + Math.sin(a) * 14); g.stroke(); } }
+    for (let k = 0; k < 80; k++) { const x = r() * PW; g.fillStyle = '#4a7a2a'; g.beginPath(); g.arc(x, HY - r() * 8, 4 + r() * 5, 0, 7); g.fill(); }
+  } else if (kind === 'ruins') {
+    cloudBank(8, HY - 190, 150);
+    ridge(HY - 10, 70, 5, '#a8b49a', 9);
+    for (let k = 0; k < 12; k++) {
+      const x = r() * PW, n = 4 + Math.floor(r() * 6), y = HY - 20 - r() * 20, roof = r() < 0.6;
+      wrap(off => { g.fillStyle = '#ece4d0'; for (let q = 0; q < n; q++) g.fillRect(x + off + q * 16, y - 46, 8, 46); if (roof) g.fillRect(x + off - 4, y - 54, n * 16 + 4, 8); });
+    }
+    for (let k = 0; k < 70; k++) { const x = r() * PW, h = 30 + r() * 30; g.fillStyle = '#2f5a3a'; g.beginPath(); g.ellipse(x, HY - h / 2, 5, h / 2, 0, 0, 7); g.fill(); }
+    ridge(HY + 6, 20, 10, '#b8b08a', 10);
+  } else if (kind === 'forest') {
+    cloudBank(7, HY - 210, 150, '#fff', '#fbefe4', '#d8b8a8');
+    ridge(HY - 10, 120, 3, '#8a5a6e', 11);
+    ridge(HY, 70, 5, '#b85a2a', 12);
+    const cols = ['#d2691e', '#e8a030', '#b8401a', '#c88a2a', '#8a3a1a'];
+    for (let k = 0; k < 420; k++) { const x = r() * PW; g.fillStyle = cols[k % 5]; g.beginPath(); g.arc(x, HY - r() * 40, 7 + r() * 9, 0, 7); g.fill(); }
+  } else if (kind === 'lake') {
+    cloudBank(8, HY - 230, 160);
+    ridge(HY - 20, 200, 3, '#5a78a8', 13, 30);
+    ridge(HY - 10, 110, 6, '#4a6a50', 14);
+    for (let k = 0; k < 260; k++) { const x = r() * PW; g.fillStyle = '#24583a'; g.beginPath(); g.moveTo(x, HY - 6); g.lineTo(x + 5, HY - 30 - r() * 14); g.lineTo(x + 10, HY - 6); g.fill(); }
+    g.fillStyle = '#3a78d0'; g.fillRect(0, HY - 8, PW, PH);
+    g.fillStyle = '#8ab8f0'; for (let y = HY - 6; y < PH; y += 4) for (let k = 0; k < 30; k++) g.fillRect(r() * PW, y, 8 + r() * 30, 1);
   }
-  for (const [x, y, rad] of blobs) { g.fillStyle = '#c9d3e2'; g.beginPath(); g.arc(x + 4, y + 7, rad, 0, 7); g.fill(); }
-  for (const [x, y, rad] of blobs) {
-    const gr = g.createRadialGradient(x - rad * 0.3, y - rad * 0.4, rad * 0.1, x, y, rad);
-    gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.75, '#f6f8fc'); gr.addColorStop(1, '#dfe6f0');
-    g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad * 0.93, 0, 7); g.fill();
-  }
-  g.globalCompositeOperation = 'destination-out'; g.fillRect(0, 236, 512, 20);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  if (kind !== 'beach' && kind !== 'lake') { g.fillStyle = ground; g.fillRect(0, HY + 8, PW, PH); }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1;
   return t;
 }
-const cloudMats = [11, 222, 3333].map(sd => new THREE.SpriteMaterial({ map: cloudTex(sd), fog: false, transparent: true, depthWrite: false }));
-for (let k = 0; k < 18; k++) {
-  const a = (k / 18) * Math.PI * 2 + rnd() * 0.2, d = 1700 + rnd() * 250, w = 520 + rnd() * 620;
-  const sp = new THREE.Sprite(cloudMats[k % 3]);
-  sp.scale.set(w, w * 0.5, 1);
-  sp.position.set(Math.sin(a) * d, w * 0.2 - 18, -Math.cos(a) * d);
-  far.add(sp);
-}
-// 수평선 바다: 모래 길가가 끝나는 곳 너머로 보이는 띠
-const sea = new THREE.Mesh(new THREE.CylinderGeometry(1500, 1500, 50, 96, 1, true), new THREE.MeshBasicMaterial({ color: 0x2c64e6, fog: false, side: THREE.BackSide }));
-sea.position.y = 2;
-far.add(sea);
-const mtnGroup = new THREE.Group(); far.add(mtnGroup);
-const mtnMat = new THREE.MeshLambertMaterial({ color: THEMES[0].mtn, fog: false, flatShading: true });
-for (let k = 0; k < 46; k++) {
-  const a = (k / 46) * Math.PI * 2 + rnd() * 0.1, h = 70 + rnd() * 190, r = 120 + rnd() * 180;
-  const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 5 + Math.floor(rnd() * 3)), mtnMat);
-  const d = 1600 + rnd() * 300;
-  m.position.set(Math.sin(a) * d, h / 2 - 10, -Math.cos(a) * d);
-  m.rotation.y = rnd() * 6;
-  mtnGroup.add(m);
+const panoCache = new Map();
+const getPano = th => { if (!panoCache.has(th.name)) panoCache.set(th.name, panoTex(th)); return panoCache.get(th.name); };
+const panoGeo = new THREE.CylinderGeometry(PANO_R, PANO_R, PANO_R * (tTop - tBot), 160, 1, true);
+const panoMeshes = [0, 1].map(k => {
+  const m = new THREE.Mesh(panoGeo, new THREE.MeshBasicMaterial({ transparent: true, fog: false, side: THREE.BackSide, depthWrite: false, opacity: k ? 0 : 1 }));
+  m.position.y = PANO_R * (tTop + tBot) / 2; m.renderOrder = -1 + k * 0.1; far.add(m); return m;
+});
+let panoName = '';
+// 스테이지가 바뀌면 원작처럼 배경이 서서히 바뀜
+function updatePano(th, dt) {
+  const [A, B] = panoMeshes;
+  if (th.name !== panoName) {
+    panoName = th.name;
+    if (!A.material.map) { A.material.map = getPano(th); A.material.needsUpdate = true; }
+    else { B.material.map = getPano(th); B.material.needsUpdate = true; B.material.opacity = 0.001; }
+  }
+  if (B.material.opacity > 0) {
+    B.material.opacity = Math.min(1, B.material.opacity + dt * 0.5);
+    if (B.material.opacity >= 1) { A.material.map = B.material.map; A.material.needsUpdate = true; B.material.opacity = 0; }
+  }
 }
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(6000, 6000), new THREE.MeshLambertMaterial({ color: THEMES[0].grass[1] }));
 ground.rotation.x = -Math.PI / 2;
@@ -401,7 +511,7 @@ class Stage {
     this.len = STAGE_LEN + (this.final ? 260 : 0);
     this.group = new THREE.Group();
     scene.add(this.group);
-    this.gw = this.theme.sea ? 140 : GW;   // 바다 코스는 길가 모래폭을 좁혀 수평선 바다가 보이게
+    this.gw = GW;
     this.innerEnd = new Float32Array(this.len + 1).fill(this.gw);
     this.obstacles = [];
     this.crowds = [];
@@ -504,6 +614,30 @@ class Stage {
         quad(i, x0, x0 + 2, x0, x0 + 2, k % 2 ? 0x111111 : 0xffffff, 0.08);
       }
     }
+    // 협곡 절벽 (원작 Devil's Canyon처럼 길 옆으로 솟은 바위벽)
+    this.wallL = new Float32Array(n + 1); this.wallR = new Float32Array(n + 1);
+    if (th.cliff) {
+      const from = th.cliff === 'both' ? Math.floor(n * 0.3) : 50, to = th.cliff === 'both' ? Math.floor(n * 0.8) : (this.fork ? n - FORK - 30 : STAGE_LEN - 60);
+      const sides = th.cliff === 'both' ? [-1, 1] : [th.cliff === 'L' ? -1 : 1];
+      const ROCK = [0xb0603a, 0xa25834, 0x8a4a2a, 0xc87a4a, 0x7a4026];
+      const vq = (i, x, ya0, ya1, yb0, yb1, hex) => {
+        const a = P[i], b = P[i + 1];
+        const ax = a.x + Math.cos(H[i]) * x, az = a.z + Math.sin(H[i]) * x, bx = b.x + Math.cos(H[i + 1]) * x, bz = b.z + Math.sin(H[i + 1]) * x;
+        pos.push(ax, a.y + ya0, az, ax, a.y + ya1, az, bx, b.y + yb0, bz, ax, a.y + ya1, az, bx, b.y + yb1, bz, bx, b.y + yb0, bz);
+        c.setHex(hex); for (let k = 0; k < 6; k++) col.push(c.r, c.g, c.b);
+      };
+      for (const sd of sides) {
+        const hgt = i2 => (24 + 18 * Math.sin(i2 * 0.07 + sd) + 9 * Math.sin(i2 * 0.23)) * clamp(Math.min((i2 - from) / 12, (to - i2) / 12), 0, 1);
+        for (let i = from; i < to; i++) {
+          const xw = sd * (this.halfW(i) + RUMBLE + 5);
+          (sd < 0 ? this.wallL : this.wallR)[i] = Math.abs(xw);
+          const h0 = hgt(i), h1 = hgt(i + 1), band = (Math.floor(i / 2) + (sd > 0 ? 1 : 0)) % 2;
+          vq(i, xw, 0, h0 * 0.35, 0, h1 * 0.35, ROCK[2 + band * 2]);
+          vq(i, xw, h0 * 0.35, h0 * 0.7, h1 * 0.35, h1 * 0.7, ROCK[band]);
+          vq(i, xw, h0 * 0.7, h0, h1 * 0.7, h1, ROCK[3 - band]);
+        }
+      }
+    }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
@@ -576,6 +710,37 @@ class Stage {
       grp.add(im);
     }
 
+    // Gateway: 길을 가로지르는 스톤헨지풍 거대한 돌문
+    if (th.gate) {
+      const stone = std(0xb6ae9c, { flatShading: true });
+      for (let i = 70; i < n - FORK - 30; i += 55 + Math.floor(rnd() * 25)) {
+        const hw = this.halfW(i) + RUMBLE + 3, gt = new THREE.Group();
+        gt.position.copy(this.P[i]); gt.rotation.y = -this.H[i];
+        for (const sx of [-1, 1]) {
+          const pl = new THREE.Mesh(new THREE.BoxGeometry(3.4, 16, 3.4), stone);
+          pl.position.set(sx * hw, 8, 0); pl.rotation.z = (rnd() - 0.5) * 0.05; pl.castShadow = true; gt.add(pl);
+          this.obstacles.push({ s: i * SEG, x: sx * hw, r: 2 });
+        }
+        const lt = new THREE.Mesh(new THREE.BoxGeometry(2 * hw + 5, 3, 3.8), stone);
+        lt.position.y = 17.4; lt.rotation.z = (rnd() - 0.5) * 0.03; lt.castShadow = true; gt.add(lt);
+        grp.add(gt);
+      }
+    }
+    // 밀밭 풍차
+    if (th.windmill) {
+      this.spinners = [];
+      for (let i = 60; i < n - 40; i += 90 + Math.floor(rnd() * 60)) {
+        const side = rnd() < 0.5 ? -1 : 1, x = side * (this.halfW(i) + RUMBLE + 24 + rnd() * 40);
+        if (!freeAt(i, x)) continue;
+        const w = new THREE.Group(); this.at(i, x, w.position); w.rotation.y = -this.H[i] + side * 0.5;
+        const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 3, 14, 8), std(0xf0ece0)); tower.position.y = 7; tower.castShadow = true;
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(2.2, 3, 8), std(0x9a4a2a)); roof.position.y = 15.5;
+        const hub = new THREE.Group(); hub.position.set(0, 14, 2.4);
+        for (let b = 0; b < 4; b++) { const bl = new THREE.Mesh(new THREE.BoxGeometry(1.4, 9, 0.15).translate(0, 4.5, 0), std(0xe8e0cc)); bl.rotation.z = b * Math.PI / 2; bl.castShadow = true; hub.add(bl); }
+        w.add(tower, roof, hub); grp.add(w); this.spinners.push(hub);
+      }
+    }
+
     // 바위 / 기둥
     if (th.extra === 'rock' || th.extra === 'column') {
       const list = [];
@@ -586,7 +751,7 @@ class Stage {
         if (freeAt(i, x) && !inRange(i, cpCrowd) && !inRange(i, goalCrowd)) list.push({ i, x });
       }
       const geo = th.extra === 'rock' ? rockGeo : columnGeo;
-      const mat = new THREE.MeshStandardMaterial({ color: th.extra === 'rock' ? th.mtn : 0xe8e0d0, roughness: 0.95, flatShading: true });
+      const mat = new THREE.MeshStandardMaterial({ color: th.extra === 'rock' ? (th.pano === 'alps' ? 0x8a909a : 0xa06a44) : 0xe8e0d0, roughness: 0.95, flatShading: true });
       const im = new THREE.InstancedMesh(geo, mat, Math.max(1, list.length));
       im.count = list.length;
       list.forEach((r, k) => {
@@ -759,54 +924,142 @@ function pointOn(st, s, x, out) {
 }
 
 // ═════════════════════════ 자동차 ═════════════════════════
+// 단면(초타원)을 차 길이 방향으로 이어 붙여 매끈한 차체를 만듦
+function loftBody(stations, seg = 32, ex = 5) {
+  const pos = [], idx = [], sp = (v, e) => Math.sign(v) * Math.pow(Math.abs(v), e);
+  for (const [z, hw, yb, yt] of stations) {
+    const mid = (yb + yt) / 2, hh = (yt - yb) / 2;
+    for (let k = 0; k < seg; k++) {
+      const a = (k / seg) * Math.PI * 2, sy = Math.sin(a);
+      // 아랫면은 평평하게, 윗면은 둥글게
+      pos.push(sp(Math.cos(a), 2 / ex) * hw, mid + (sy < 0 ? sp(sy, 0.25) : sp(sy, 2 / (ex - 1.5))) * hh, z);
+    }
+  }
+  const L = stations.length;
+  for (let s = 0; s < L - 1; s++) for (let k = 0; k < seg; k++) {
+    const a = s * seg + k, b = s * seg + (k + 1) % seg, c = a + seg, d = b + seg;
+    idx.push(a, b, c, b, d, c);
+  }
+  const f0 = stations[0], fl = stations[L - 1], cf = pos.length / 3;
+  pos.push(0, (f0[2] + f0[3]) / 2, f0[0]);
+  for (let k = 0; k < seg; k++) idx.push(cf, (k + 1) % seg, k);
+  const cb = pos.length / 3;
+  pos.push(0, (fl[2] + fl[3]) / 2, fl[0]);
+  for (let k = 0; k < seg; k++) idx.push(cb, (L - 1) * seg + k, (L - 1) * seg + (k + 1) % seg);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+// 원작 차: 빨간 테스타로사 스파이더 (오픈카, 사이드 스트레이크, 넓은 리어, 블랙 루버 테일)
 function makePlayerCar() {
   const g = new THREE.Group();
   g.rotation.order = 'YXZ';
-  const paint = new THREE.MeshPhysicalMaterial({ color: 0xe8352e, metalness: 0.25, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 });
-  const dark = std(0x141414, { roughness: 0.6 });
-  const chrome = std(0xdddddd, { metalness: 1, roughness: 0.2 });
+  const paint = new THREE.MeshPhysicalMaterial({ color: 0xd8151a, metalness: 0.2, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.06 });
+  const dark = std(0x121212, { roughness: 0.55 });
+  const satin = std(0x2a2a2a, { roughness: 0.4, metalness: 0.3 });
+  const chrome = std(0xe6e6e6, { metalness: 1, roughness: 0.15 });
+  const silver = std(0xbfc4c8, { metalness: 0.9, roughness: 0.3 });
+  const leather = std(0xe9dcc0, { roughness: 0.7 });
   const add = (geo, mat, x, y, z, parent = g) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
-  // 측면 프로파일(테스타로사풍)을 압출
-  const sh0 = new THREE.Shape();
-  [[-2.3, 0.26], [2.25, 0.26], [2.38, 0.42], [2.25, 0.6], [1.0, 0.8], [0.35, 0.86], [0.2, 0.74], [-0.75, 0.74], [-0.85, 0.96], [-2.15, 0.98], [-2.32, 0.86], [-2.34, 0.4]]
-    .forEach(([x, y], k) => (k ? sh0.lineTo(x, y) : sh0.moveTo(x, y)));
-  const bodyGeo = new THREE.ExtrudeGeometry(sh0, { depth: 2.0, bevelEnabled: true, bevelSize: 0.09, bevelThickness: 0.1, bevelSegments: 3 });
-  bodyGeo.translate(0, 0, -1.0).rotateY(Math.PI / 2);
-  add(bodyGeo, paint, 0, 0, 0);
-  // 사이드 스트레이크
-  for (const sx of [-1, 1]) for (let k = 0; k < 5; k++) add(new THREE.BoxGeometry(0.06, 0.05, 1.7), dark, sx * 1.13, 0.5 + k * 0.08, 0.75);
-  // 리어 그릴 + 테일램프
-  add(new THREE.BoxGeometry(2.1, 0.42, 0.06), dark, 0, 0.62, 2.45);
+
+  // 차체: [z(앞이 -), 반폭, 바닥, 윗면]
+  add(loftBody([
+    [-2.36, 0.62, 0.30, 0.44],
+    [-2.26, 0.90, 0.26, 0.52],
+    [-2.00, 0.98, 0.24, 0.58],
+    [-1.55, 1.00, 0.24, 0.66],   // 앞바퀴 펜더
+    [-1.00, 0.99, 0.24, 0.72],
+    [-0.55, 1.00, 0.24, 0.80],   // 카울
+    [-0.38, 1.01, 0.24, 0.82],   // 윈드실드 아래
+    [-0.25, 1.02, 0.24, 0.73],   // 실내 시작 (오픈카)
+    [0.50, 1.07, 0.24, 0.73],
+    [0.72, 1.10, 0.24, 0.90],    // 시트 뒤 롤 후프 라인
+    [1.15, 1.15, 0.24, 0.95],    // 리어 펜더 (가장 넓음)
+    [1.80, 1.15, 0.26, 0.96],
+    [2.20, 1.12, 0.30, 0.94],
+    [2.40, 1.06, 0.34, 0.88],
+  ]), paint, 0, 0, 0);
+
+  // 실내: 바닥, 시트, 대시보드, 센터 콘솔
+  add(new THREE.BoxGeometry(1.86, 0.04, 0.95), dark, 0, 0.745, 0.15);
+  for (const sx of [-0.45, 0.45]) {
+    add(new THREE.BoxGeometry(0.5, 0.12, 0.5), leather, sx, 0.8, 0.3);
+    add(new THREE.BoxGeometry(0.5, 0.55, 0.12), leather, sx, 1.02, 0.6).rotation.x = 0.18;
+    add(new THREE.BoxGeometry(0.3, 0.16, 0.1), leather, sx, 1.36, 0.64);   // 헤드레스트
+  }
+  add(new THREE.BoxGeometry(1.9, 0.14, 0.32), dark, 0, 0.86, -0.32);       // 대시보드
+  add(new THREE.BoxGeometry(0.22, 0.12, 0.7), dark, 0, 0.8, 0.1);          // 센터 콘솔
+  // 엔진 커버 루버 (리어 데크)
+  for (let k = 0; k < 6; k++) add(new THREE.BoxGeometry(1.2, 0.02, 0.06), satin, 0, 0.955, 1.05 + k * 0.17);
+
+  // 윈드실드 (프레임 + 유리) & 운전석쪽 단일 미러 (테스타로사 '모노스페키오')
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0x5a7080, roughness: 0.05, transparent: true, opacity: 0.35 });
+  const ws = new THREE.Group(); ws.position.set(0, 0.82, -0.36); ws.rotation.x = -0.62; g.add(ws);
+  add(new THREE.BoxGeometry(1.86, 0.5, 0.02), glass, 0, 0.25, 0, ws);
+  add(new THREE.BoxGeometry(1.94, 0.05, 0.05), dark, 0, 0.5, 0, ws);
+  for (const sx of [-0.95, 0.95]) add(new THREE.BoxGeometry(0.05, 0.52, 0.05), dark, sx, 0.25, 0, ws);
+  const mirror = new THREE.Group(); mirror.position.set(-1.08, 1.1, -0.3); g.add(mirror);
+  add(new THREE.BoxGeometry(0.05, 0.05, 0.18), paint, 0.06, -0.06, 0, mirror);
+  add(new THREE.BoxGeometry(0.26, 0.13, 0.08), paint, -0.06, 0, 0, mirror);
+  add(new THREE.BoxGeometry(0.22, 0.1, 0.01), chrome, -0.06, 0, 0.045, mirror);
+
+  // 사이드 스트레이크 (문에서 리어 흡기구까지 이어지는 가로 핀 5개) + 뒤쪽 검은 흡기구
+  for (const sx of [-1, 1]) {
+    add(new THREE.BoxGeometry(0.03, 0.34, 1.35), dark, sx * 1.075, 0.6, 0.45);
+    for (let k = 0; k < 5; k++) {
+      const fin = add(new THREE.BoxGeometry(0.1, 0.035, 1.4 - k * 0.04), paint, sx * 1.11, 0.46 + k * 0.07, 0.45 - k * 0.01);
+      fin.castShadow = false;
+    }
+    add(new THREE.BoxGeometry(0.02, 0.03, 1.1), chrome, sx * 1.0, 0.75, -0.9);  // 도어 라인 크롬
+  }
+
+  // 앞: 팝업 라이트 덮개 라인, 그릴, 방향지시등, 엠블럼
+  for (const sx of [-0.55, 0.55]) {
+    add(new THREE.BoxGeometry(0.5, 0.012, 0.36), satin, sx, 0.57, -1.92);
+    add(new THREE.BoxGeometry(0.34, 0.06, 0.04), std(0xffb020, { emissive: 0x332200 }), sx * 1.25, 0.38, -2.33);
+  }
+  add(new THREE.BoxGeometry(1.3, 0.1, 0.05), dark, 0, 0.36, -2.36);
+  const badge = std(0xffd400, { metalness: 0.4, roughness: 0.3 });
+  add(new THREE.BoxGeometry(0.09, 0.12, 0.02), badge, 0, 0.5, -2.36);
+
+  // 뒤: 블랙 그릴(가로 루버 사이로 보이는 테일램프), 번호판, 머플러 2+2
   const tail = new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff1010, emissiveIntensity: 1 });
-  add(new THREE.BoxGeometry(1.96, 0.3, 0.05), tail, 0, 0.62, 2.43);
-  for (let k = 0; k < 5; k++) add(new THREE.BoxGeometry(2.12, 0.035, 0.06), paint, 0, 0.47 + k * 0.075, 2.48);
-  add(new THREE.BoxGeometry(2.0, 0.16, 0.1), chrome, 0, 0.32, 2.42);
-  // 윈드실드 프레임, 미러, 롤바
-  const glass = new THREE.MeshPhysicalMaterial({ color: 0x334455, metalness: 0, roughness: 0.05, transmission: 0.6, transparent: true, opacity: 0.45 });
-  add(new THREE.BoxGeometry(1.95, 0.5, 0.03), glass, 0, 1.08, -0.42).rotation.x = -0.6;
-  add(new THREE.BoxGeometry(2.0, 0.05, 0.06), dark, 0, 1.3, -0.27).rotation.x = -0.6;
-  for (const sx of [-1, 1]) add(new THREE.BoxGeometry(0.18, 0.1, 0.12), paint, sx * 1.17, 0.98, -0.32);
-  add(new THREE.BoxGeometry(1.9, 0.1, 0.35), dark, 0, 0.78, 0.2);
-  // 헤드라이트(팝업 닫힘) & 번호판
-  add(new THREE.BoxGeometry(0.6, 0.18, 0.05), new THREE.MeshBasicMaterial({ map: textTex('OUTRUN', '#f2f2f2', '#222', 256, 64, 40) }), 0, 0.38, 2.47);
-  // 핸들
-  const wheel = new THREE.Group(); wheel.position.set(-0.45, 1.08, -0.15); wheel.rotation.x = -0.9; g.add(wheel);
-  add(new THREE.TorusGeometry(0.19, 0.03, 8, 20), dark, 0, 0, 0, wheel);
-  add(new THREE.BoxGeometry(0.36, 0.04, 0.03), dark, 0, 0, 0, wheel);
+  add(new THREE.BoxGeometry(2.04, 0.36, 0.05), dark, 0, 0.66, 2.41);
+  for (const sx of [-0.62, 0.62]) add(new THREE.BoxGeometry(0.62, 0.22, 0.04), tail, sx, 0.66, 2.42);
+  for (let k = 0; k < 6; k++) add(new THREE.BoxGeometry(2.06, 0.022, 0.06), dark, 0, 0.51 + k * 0.06, 2.45);
+  add(new THREE.BoxGeometry(0.08, 0.1, 0.02), badge, 0, 0.88, 2.42);
+  add(new THREE.BoxGeometry(0.62, 0.17, 0.03), new THREE.MeshBasicMaterial({ map: textTex('OUTRUN', '#f2f2f2', '#222', 256, 64, 40) }), 0, 0.42, 2.43);
+  add(new THREE.BoxGeometry(2.0, 0.08, 0.1), satin, 0, 0.32, 2.36);
+  const pipe = new THREE.CylinderGeometry(0.055, 0.055, 0.2, 12).rotateX(Math.PI / 2);
+  for (const sx of [-0.75, -0.6, 0.6, 0.75]) { add(pipe, chrome, sx, 0.3, 2.42); add(new THREE.CircleGeometry(0.04, 10), dark, sx, 0.3, 2.525); }
+
+  // 핸들 (3스포크)
+  const wheel = new THREE.Group(); wheel.position.set(-0.45, 1.02, -0.18); wheel.rotation.x = -0.95; g.add(wheel);
+  add(new THREE.TorusGeometry(0.18, 0.025, 8, 24), dark, 0, 0, 0, wheel);
+  for (let k = 0; k < 3; k++) { const sp = add(new THREE.BoxGeometry(0.03, 0.17, 0.015), silver, 0, 0, 0, wheel); sp.rotation.z = k * 2.094; sp.geometry.translate(0, 0.085, 0); }
+  add(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 12).rotateX(Math.PI / 2), badge, 0, 0, 0.01, wheel);
   g.userData.steeringWheel = wheel;
-  // 바퀴
-  const tireG = new THREE.CylinderGeometry(0.44, 0.44, 0.42, 22).rotateZ(Math.PI / 2);
-  const rimG = new THREE.CylinderGeometry(0.28, 0.28, 0.44, 5).rotateZ(Math.PI / 2);
+
+  // 바퀴: 5스포크 스타 휠 (뒤가 더 넓은 타이어)
   g.userData.wheels = [];
-  for (const [x, z] of [[-1.05, -1.45], [1.05, -1.45], [-1.08, 1.5], [1.08, 1.5]]) {
-    const w = new THREE.Group(); w.position.set(x, 0.44, z); g.add(w);
-    add(tireG, dark, 0, 0, 0, w); add(rimG, chrome, 0, 0, 0, w);
+  for (const [x, z, wdt, rad] of [[-0.98, -1.45, 0.34, 0.42], [0.98, -1.45, 0.34, 0.42], [-1.02, 1.48, 0.42, 0.44], [1.02, 1.48, 0.42, 0.44]]) {
+    const w = new THREE.Group(); w.rotation.order = 'YXZ'; w.position.set(x, rad, z); g.add(w);
+    add(new THREE.CylinderGeometry(rad, rad, wdt, 26).rotateZ(Math.PI / 2), dark, 0, 0, 0, w);
+    const face = Math.sign(x) * (wdt / 2 + 0.005);
+    add(new THREE.CylinderGeometry(rad * 0.68, rad * 0.68, 0.02, 24).rotateZ(Math.PI / 2), satin, face, 0, 0, w);
+    for (let k = 0; k < 5; k++) {
+      const sp = add(new THREE.BoxGeometry(0.03, rad * 0.6, 0.075).translate(0, rad * 0.3, 0), silver, face * 1.08, 0, 0, w);
+      sp.rotation.x = k * Math.PI * 2 / 5;
+    }
+    add(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 12).rotateZ(Math.PI / 2), chrome, face * 1.12, 0, 0, w);
     g.userData.wheels.push(w);
   }
-  // 운전자 & 금발 동승자
-  const driver = makeFigure({ shirt: 0x3f6fd8, hair: 0x7a4418, seated: true });
+
+  // 운전자 (갈색 머리, 파란 셔츠) & 금발 동승자
+  const driver = makeFigure({ shirt: 0x3f6fd8, hair: 0x6a3a14, seated: true });
   driver.position.set(-0.45, 0.82, 0.3);
-  const pass = makeFigure({ shirt: 0xff6fa8, hair: 0xffd860, skin: 0xf6d4b4, seated: true, longHair: true });
+  const pass = makeFigure({ shirt: 0xffffff, hair: 0xffd860, skin: 0xf6d4b4, seated: true, longHair: true });
   pass.position.set(0.45, 0.8, 0.3); pass.scale.setScalar(0.94);
   g.add(driver, pass);
   driver.userData.base = driver.position.clone(); pass.userData.base = pass.position.clone();
@@ -936,69 +1189,126 @@ addEventListener('keydown', () => setTouchMode(false));
 renderer.domElement.addEventListener('pointerdown', () => { if (state !== 'race' && state !== 'countdown') startOrRestart(); });
 
 // ═════════════════════════ 사운드 ═════════════════════════
-let actx, eng1, eng2, engGain, musicGain, skidGain, musicOn = true, seqTimer, songIdx = 0;
+// 원작 기판(YM2151 FM 음원) 느낌의 FM 신시사이저 — 곡은 저작권 때문에 같은 스타일의 오리지널 곡
+let actx, engOsc = [], engFilt, engAM, engGain, musicGain, sfxGain, skidGain, squeal = [], musicOn = true, seqTimer, songIdx = 0;
 const SONGS = [
-  { name: 'OCEAN BREEZE', bpm: 150, roots: [41, 40, 38, 36], bass: [0, 3, 6, 8, 11, 14],
-    chords: [[53, 57, 60, 64], [52, 55, 59, 62], [50, 53, 57, 60], [48, 52, 55, 59]],
-    mel: [[[72, 0, 3], [74, 3, 3], [76, 6, 2], [79, 8, 4], [76, 12, 2], [74, 14, 2]], [[76, 0, 6], [74, 6, 2], [72, 8, 4], [71, 12, 4]],
-          [[69, 0, 3], [72, 3, 3], [74, 6, 2], [77, 8, 4], [76, 12, 2], [74, 14, 2]], [[72, 0, 8], [71, 8, 2], [72, 10, 2], [74, 12, 4]]] },
-  { name: 'SUN SALSA', bpm: 166, roots: [45, 38, 43, 36], bass: [0, 3, 6, 8, 10, 14],
-    chords: [[57, 60, 64], [57, 62, 66], [55, 59, 62], [55, 60, 64]],
-    mel: [[[76, 0, 2], [76, 3, 2], [74, 6, 2], [72, 8, 2], [74, 10, 2], [76, 12, 4]], [[78, 0, 3], [76, 3, 3], [74, 6, 2], [72, 8, 4], [69, 12, 4]],
-          [[71, 0, 2], [74, 3, 2], [79, 6, 2], [78, 8, 2], [76, 10, 2], [74, 12, 4]], [[72, 0, 6], [71, 6, 2], [72, 8, 8]]] },
-  { name: 'EVENING WAVE', bpm: 118, roots: [36, 45, 38, 43], bass: [0, 6, 8, 12],
-    chords: [[52, 55, 59, 64], [52, 55, 60, 64], [53, 57, 60, 65], [53, 55, 59, 62]],
-    mel: [[[76, 0, 6], [79, 6, 2], [77, 8, 4], [76, 12, 4]], [[72, 0, 8], [74, 8, 4], [76, 12, 4]],
-          [[77, 0, 6], [76, 6, 2], [74, 8, 4], [72, 12, 4]], [[71, 0, 8], [74, 8, 8]]] },
+  { name: 'CORAL DRIVE', freq: '87.6', bpm: 152,
+    ch: ['F:maj7', 'E:m7', 'D:m7', 'C:maj7', 'Bb:maj7', 'A:m7', 'G:m7', 'C:7'],
+    bass: [0, 3, 6, 8, 11, 14], oct: [6, 14], stab: [0, 3, 6, 10, 12],
+    mel: [[[72, 0, 2], [76, 2, 2], [79, 4, 4], [77, 8, 2], [76, 10, 2], [74, 12, 4]], [[76, 0, 6], [74, 6, 2], [71, 8, 4], [67, 12, 4]],
+          [[69, 0, 2], [72, 2, 2], [77, 4, 4], [76, 8, 2], [74, 10, 2], [72, 12, 4]], [[71, 0, 4], [72, 4, 2], [74, 6, 2], [76, 8, 8]],
+          [[77, 0, 3], [74, 3, 3], [70, 6, 2], [74, 8, 2], [77, 10, 2], [81, 12, 4]], [[79, 0, 4], [76, 4, 2], [72, 6, 2], [76, 8, 8]],
+          [[74, 0, 2], [77, 2, 2], [79, 4, 2], [77, 6, 2], [74, 8, 4], [70, 12, 4]], [[72, 0, 4], [70, 4, 4], [67, 8, 4], [64, 12, 4]]],
+    dr: { k: 'x.....x.x.......', s: '....x.......x...', h: 'x.xxx.xxx.xxx.xx', c: '...x..x....x.x..', b: 'x..x..x...x.x...' } },
+  { name: 'PALM BREEZE', freq: '92.4', bpm: 118,
+    ch: ['G:maj7', 'F#:m7', 'E:m7', 'D:maj7', 'G:maj7', 'F#:m7', 'E:m7', 'A:7'],
+    bass: [0, 6, 8, 12, 14], oct: [14], stab: [0, 8],
+    mel: [[[74, 0, 6], [76, 6, 2], [78, 8, 4], [81, 12, 4]], [[78, 0, 8], [76, 8, 4], [73, 12, 4]],
+          [[71, 0, 4], [74, 4, 4], [76, 8, 4], [78, 12, 4]], [[74, 0, 12], [73, 12, 4]],
+          [[79, 0, 6], [78, 6, 2], [76, 8, 4], [74, 12, 4]], [[76, 0, 6], [73, 6, 2], [69, 8, 8]],
+          [[71, 0, 3], [74, 3, 3], [76, 6, 2], [79, 8, 4], [78, 12, 4]], [[76, 0, 8], [73, 8, 4], [69, 12, 4]]],
+    dr: { k: 'x.....x...x.....', s: '....x.......x...', h: 'x.x.x.x.x.x.x.x.', c: '', b: '' } },
+  { name: 'SURF LINE', freq: '101.8', bpm: 166,
+    ch: ['A:m', 'F:maj', 'G:maj', 'E:m', 'A:m', 'F:maj', 'G:maj', 'E:7'],
+    bass: [0, 2, 4, 6, 8, 10, 12, 14], oct: [2, 6, 10, 14], stab: [0, 6, 12],
+    mel: [[[76, 0, 2], [76, 3, 1], [74, 4, 2], [72, 6, 2], [74, 8, 4], [76, 12, 4]], [[77, 0, 4], [76, 4, 2], [72, 6, 2], [69, 8, 8]],
+          [[74, 0, 2], [74, 3, 1], [72, 4, 2], [71, 6, 2], [72, 8, 4], [74, 12, 4]], [[71, 0, 8], [67, 8, 4], [71, 12, 4]],
+          [[81, 0, 4], [79, 4, 2], [76, 6, 2], [79, 8, 4], [81, 12, 4]], [[77, 0, 4], [76, 4, 2], [72, 6, 2], [77, 8, 8]],
+          [[79, 0, 2], [77, 2, 2], [76, 4, 4], [74, 8, 4], [71, 12, 4]], [[68, 0, 4], [71, 4, 4], [74, 8, 4], [76, 12, 4]]],
+    dr: { k: 'x...x...x...x...', s: '....x.......x..x', h: 'xxxxxxxxxxxxxxxx', c: '', b: '..x...x...x...x.' } },
 ];
+const PC = { C: 0, 'C#': 1, Db: 1, D: 2, Eb: 3, E: 4, F: 5, 'F#': 6, G: 7, Ab: 8, A: 9, Bb: 10, B: 11 };
+const QUAL = { maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10], '7': [0, 4, 7, 10], m: [0, 3, 7, 12], maj: [0, 4, 7, 12] };
+const parseChord = c => { const [r, q] = c.split(':'), pc = PC[r]; return { bass: 36 + pc, notes: QUAL[q].map(iv => 55 + ((pc - 7 + 12) % 12) + iv) }; };
+// FM 악기 (ratio = 모듈레이터 주파수비, index = 변조 깊이)
+const INS = {
+  bass:  { ratio: 1, index: 3.2, idxEnd: 0.6, mdec: 0.12, att: 0.004, dec: 0.25, sus: 0.5, vol: 0.55, type: 'sine' },
+  lead:  { ratio: 1, index: 2.2, idxEnd: 1.1, mdec: 0.25, att: 0.02, dec: 0.4, sus: 0.75, vol: 0.32, type: 'sine', vib: 5.5 },
+  keys:  { ratio: 2, index: 1.6, idxEnd: 0.2, mdec: 0.3, att: 0.003, dec: 0.35, sus: 0.2, vol: 0.13, type: 'sine' },
+  bell:  { ratio: 3.5, index: 2.5, idxEnd: 0.1, mdec: 0.2, att: 0.002, dec: 0.25, sus: 0.0, vol: 0.12, type: 'sine' },
+};
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+function fm(midi, t, dur, ins, dest = musicGain, volMul = 1) {
+  const f = mtof(midi), car = actx.createOscillator(), mod = actx.createOscillator(), mg = actx.createGain(), g = actx.createGain();
+  car.type = ins.type; car.frequency.value = f; mod.frequency.value = f * ins.ratio;
+  mg.gain.setValueAtTime(f * ins.index, t); mg.gain.exponentialRampToValueAtTime(Math.max(1, f * ins.idxEnd), t + ins.mdec);
+  mod.connect(mg); mg.connect(car.frequency);
+  if (ins.vib) { const l = actx.createOscillator(), lg = actx.createGain(); l.frequency.value = ins.vib; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.012, t + 0.3); l.connect(lg); lg.connect(car.frequency); l.start(t); l.stop(t + dur + 0.3); }
+  const v = ins.vol * volMul;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + ins.att);
+  g.gain.setTargetAtTime(v * ins.sus, t + ins.att, ins.dec / 3);
+  g.gain.setTargetAtTime(0, t + dur, 0.06);
+  car.connect(g); g.connect(dest);
+  car.start(t); mod.start(t); car.stop(t + dur + 0.4); mod.stop(t + dur + 0.4);
+}
+let noiseBuf;
+function noise(t, dur, vol, type, freq, dest = musicGain, q = 0.8) {
+  const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+  src.buffer = noiseBuf; f.type = type; f.frequency.value = freq; f.Q.value = q;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  src.connect(f); f.connect(g); g.connect(dest); src.start(t, Math.random()); src.stop(t + dur + 0.05);
+}
+function drum(kind, t) {
+  if (kind === 'k') { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.14); g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.2); o.connect(g); g.connect(musicGain); o.start(t); o.stop(t + 0.25); }
+  if (kind === 's') { noise(t, 0.14, 0.5, 'highpass', 1500); fm(55, t, 0.05, INS.bell, musicGain, 0.5); }
+  if (kind === 'h') noise(t, 0.035, 0.18, 'highpass', 7500);
+  if (kind === 'c') { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.setValueAtTime(340, t); o.frequency.exponentialRampToValueAtTime(230, t + 0.1); g.gain.setValueAtTime(0.45, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16); o.connect(g); g.connect(musicGain); o.start(t); o.stop(t + 0.2); }
+  if (kind === 'b') { fm(88, t, 0.05, INS.bell, musicGain, 0.8); }
+}
 function initAudio() {
   if (actx) { actx.resume(); return; }
   actx = new (window.AudioContext || window.webkitAudioContext)();
-  const filt = actx.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 700;
-  engGain = actx.createGain(); engGain.gain.value = 0;
-  eng1 = actx.createOscillator(); eng1.type = 'sawtooth';
-  eng2 = actx.createOscillator(); eng2.type = 'square';
-  eng1.connect(filt); eng2.connect(filt); filt.connect(engGain); engGain.connect(actx.destination);
-  eng1.start(); eng2.start();
-  // 타이어 스키드음 (루프 노이즈)
-  const nb = actx.createBuffer(1, actx.sampleRate, actx.sampleRate), nd = nb.getChannelData(0);
-  for (let k = 0; k < nd.length; k++) nd[k] = Math.random() * 2 - 1;
-  const ns = actx.createBufferSource(); ns.buffer = nb; ns.loop = true;
-  const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 6;
-  skidGain = actx.createGain(); skidGain.gain.value = 0;
-  ns.connect(bp); bp.connect(skidGain); skidGain.connect(actx.destination); ns.start();
-  musicGain = actx.createGain(); musicGain.gain.value = 0.07; musicGain.connect(actx.destination);
+  noiseBuf = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
+  const nd = noiseBuf.getChannelData(0); for (let k = 0; k < nd.length; k++) nd[k] = Math.random() * 2 - 1;
+  const comp = actx.createDynamicsCompressor(); comp.connect(actx.destination);
+  musicGain = actx.createGain(); musicGain.gain.value = 0.22; musicGain.connect(comp);
+  sfxGain = actx.createGain(); sfxGain.gain.value = 0.9; sfxGain.connect(comp);
+  // 엔진: 디튠된 톱니파 + 서브 사각파 → 디스토션 → 로우패스 → 회전수에 따른 떨림(AM)
+  const shaper = actx.createWaveShaper(), curve = new Float32Array(1024);
+  for (let k = 0; k < 1024; k++) { const x = k / 512 - 1; curve[k] = Math.tanh(x * 3); }
+  shaper.curve = curve;
+  engFilt = actx.createBiquadFilter(); engFilt.type = 'lowpass'; engFilt.Q.value = 3;
+  engAM = actx.createGain(); engGain = actx.createGain(); engGain.gain.value = 0;
+  for (const [type, mul] of [['sawtooth', 1], ['sawtooth', 1.008], ['square', 0.5]]) {
+    const o = actx.createOscillator(); o.type = type; o.mul = mul; o.connect(shaper); o.start(); engOsc.push(o);
+  }
+  shaper.connect(engFilt); engFilt.connect(engAM); engAM.connect(engGain); engGain.connect(sfxGain);
+  const lfo = actx.createOscillator(), lg = actx.createGain(); lfo.type = 'triangle'; lg.gain.value = 0.35; lfo.connect(lg); lg.connect(engAM.gain); lfo.start(); engOsc.lfo = lfo;
+  // 타이어 스키드: 사인 2개(끼익) + 대역 노이즈
+  skidGain = actx.createGain(); skidGain.gain.value = 0; skidGain.connect(sfxGain);
+  const vib = actx.createOscillator(), vg = actx.createGain(); vib.frequency.value = 9; vg.gain.value = 60; vib.connect(vg); vib.start();
+  for (const f of [1850, 2380]) { const o = actx.createOscillator(); o.frequency.value = f; vg.connect(o.frequency); const og = actx.createGain(); og.gain.value = 0.25; o.connect(og); og.connect(skidGain); o.start(); squeal.push(o); }
+  const ns = actx.createBufferSource(); ns.buffer = noiseBuf; ns.loop = true;
+  const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 4;
+  const ng = actx.createGain(); ng.gain.value = 0.6; ns.connect(bp); bp.connect(ng); ng.connect(skidGain); ns.start();
   startMusic();
 }
 function noiseBurst(dur, vol, freq = 0) {
   if (!actx) return;
-  const b = actx.createBuffer(1, Math.floor(actx.sampleRate * dur), actx.sampleRate), d = b.getChannelData(0);
-  for (let k = 0; k < d.length; k++) d[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / d.length, freq ? 0.6 : 2);
-  const src = actx.createBufferSource(), g = actx.createGain();
-  src.buffer = b; g.gain.value = vol;
-  if (freq) { const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.7; src.connect(f); f.connect(g); } else src.connect(g);
-  g.connect(actx.destination); src.start();
-}
-const cheer = () => noiseBurst(1.6, 0.25, 1400);
-const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
-function tone(midi, t, dur, type, vol, dest = musicGain) {
+  const t = actx.currentTime;
+  if (freq) { noise(t, dur, vol, 'bandpass', freq, sfxGain, 0.6); return; }
+  // 충돌: 저음 쿵 + 파편 노이즈 + 금속성 FM
   const o = actx.createOscillator(), g = actx.createGain();
-  o.type = type; o.frequency.value = mtof(midi);
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + 0.05);
+  o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(30, t + dur * 0.6);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t + dur + 0.1);
+  noise(t, dur, vol * 0.9, 'lowpass', 1800, sfxGain);
+  if (dur > 0.5) fm(47, t, 0.3, { ...INS.bell, ratio: 1.41, index: 6, vol: 0.4 }, sfxGain);
 }
-const beep = (m, d = 0.25) => actx && tone(m, actx.currentTime, d, 'square', 0.12, actx.destination);
+const cheer = () => { if (!actx) return; const t = actx.currentTime; for (let k = 0; k < 6; k++) noise(t + k * 0.12, 1.2, 0.12, 'bandpass', 900 + Math.random() * 1400, sfxGain, 1.5); };
+const beep = (m, d = 0.25) => actx && fm(m, actx.currentTime, d, { ...INS.lead, vol: 0.4 }, sfxGain);
+function fanfare() { if (!actx) return; const t = actx.currentTime; [72, 76, 79, 84].forEach((n, k) => fm(n, t + k * 0.09, 0.25, { ...INS.lead, vol: 0.35 }, sfxGain)); }
 function startMusic() {
   clearInterval(seqTimer);
-  const S = SONGS[songIdx], STEP = 60 / S.bpm / 4;
+  const S = SONGS[songIdx], STEP = 60 / S.bpm / 4, chords = S.ch.map(parseChord);
   let step = 0, next = actx.currentTime + 0.1;
   seqTimer = setInterval(() => {
     while (next < actx.currentTime + 0.15) {
-      const bar = Math.floor(step / 16) % 4, s = step % 16;
-      if (S.bass.includes(s)) tone(S.roots[bar] + (s === 6 || s === 14 ? 12 : 0), next, STEP * 2, 'triangle', 0.9);
-      if (s === 0 || s === 8) S.chords[bar].forEach(n => tone(n, next, STEP * 7, 'sine', 0.18));
-      if (s % 4 === 2) tone(96, next, 0.03, 'square', 0.05);
-      for (const [n, st, len] of S.mel[bar]) if (st === s) tone(n, next, STEP * len, 'square', 0.22);
+      const bar = Math.floor(step / 16) % chords.length, s = step % 16, C = chords[bar];
+      if (S.bass.includes(s)) fm(C.bass + (S.oct.includes(s) ? 12 : 0), next, STEP * 1.8, INS.bass);
+      if (S.stab.includes(s)) C.notes.forEach(n => fm(n, next, STEP * (S.stab.length > 3 ? 1.5 : 6), INS.keys));
+      for (const [n, st, len] of S.mel[bar]) if (st === s) fm(n, next, STEP * len, INS.lead);
+      for (const d of 'kshcb') if (S.dr[d] && S.dr[d][s] === 'x') drum(d, next);
       step++; next += STEP;
     }
   }, 25);
@@ -1008,7 +1318,7 @@ function selectSong(i) {
   showTitle();
   if (actx) startMusic(); else initAudio();
 }
-function toggleMusic() { musicOn = !musicOn; if (musicGain) musicGain.gain.value = musicOn ? 0.07 : 0; }
+function toggleMusic() { musicOn = !musicOn; if (musicGain) musicGain.gain.value = musicOn ? 0.22 : 0; }
 
 // ═════════════════════════ 게임 상태 ═════════════════════════
 const player = { s: 0, x: 0, speed: 0, gear: 0, steer: 0, crashT: 0, bumpT: 0, spin: 0, brake: false, skid: 0 };
@@ -1056,8 +1366,11 @@ function reset() {
 }
 function showTitle() {
   msg.textContent = 'OUT RUN 3D';
-  sub.innerHTML = `♪ ◀ ${SONGS[songIdx].name} ▶ ♪<br>ENTER / 화면 터치로 시작 (모바일: ◀▶ 버튼으로 음악 선택)<br>←→ 핸들 · ↑ 가속 · ↓ 브레이크 · SPACE 기어(LOW/HIGH) · M 음악 · P 도트/HD<br>체크포인트 갈림길에서 왼쪽/오른쪽 길을 골라 5개 골 중 하나로!`;
+  sub.innerHTML = `ENTER / 화면 터치로 출발<br>←→ 핸들 · ↑ 가속 · ↓ 브레이크 · SPACE 기어 · M 음악 · P 도트/HD`;
   msgT = 0;
+  $('radio').style.display = 'block';
+  $('rl').innerHTML = SONGS.map((s, k) => `<span class="${k === songIdx ? 'on' : ''}">${s.freq}<br>${s.name}</span>`).join('');
+  $('rn').style.left = `calc(20% + ${(songIdx / (SONGS.length - 1)) * 60}% - 2px + ${songIdx === 0 ? 12 : songIdx === SONGS.length - 1 ? -12 : 0}px)`;
 }
 function startOrRestart() {
   initAudio();
@@ -1065,6 +1378,7 @@ function startOrRestart() {
     if (state !== 'title') reset();
     state = 'countdown'; cdT = 3.6;
     msg.textContent = ''; sub.innerHTML = '';
+    $('radio').style.display = 'none';
   }
 }
 function shiftGear() { if (state === 'race' && player.crashT <= 0) player.gear ^= 1; }
@@ -1162,6 +1476,7 @@ function update(dt) {
         if (state === 'race') {
           time += EXTEND[c.level - 1];
           showMsg('EXTENDED PLAY!', `STAGE ${c.level + 1} · ${c.theme.name}`);
+          fanfare();
           cheer();
           waveT = 0;
         }
@@ -1189,6 +1504,14 @@ function update(dt) {
           p.speed = Math.min(p.speed, t.speed * 0.6); t.s = p.s + half + 1.5;
         } else if (ds <= 0) t.s = p.s - half - 1.5;
         p.x += Math.sign(p.x - t.x || 1) * 0.8;
+      }
+    }
+    // 절벽에 부딪힘
+    {
+      const wl = cur.wallL[i], wr = cur.wallR[i];
+      if (p.crashT <= 0 && ((wl && p.x < -wl + 1.6) || (wr && p.x > wr - 1.6))) {
+        if (p.speed > 25) crash(true); else { p.speed *= 0.5; crash(false); }
+        p.x = clamp(p.x, wl ? -wl + 2 : -1e9, wr ? wr - 2 : 1e9);
       }
     }
     // 장애물 (나무, 관중, 기둥, 광고판)
@@ -1238,6 +1561,7 @@ function animatePeople(t) {
       c.bodies.instanceMatrix.needsUpdate = c.heads.instanceMatrix.needsUpdate = true;
     }
     for (const f of st.flags) waveFlag(f, t + f.id, 0.35);
+    if (st.spinners) for (const h of st.spinners) h.rotation.z = t * 1.2;
     for (const f of st.flaggers) {
       const arm = f.userData.armR;
       let up;
@@ -1257,15 +1581,13 @@ function render(dt) {
   scene.fog.color.lerp(tgt.setHex(th.fog), k);
   skyMat.uniforms.top.value.lerp(tgt.setHex(th.sky[0]), k);
   skyMat.uniforms.bottom.value.lerp(tgt.setHex(th.sky[1]), k);
-  mtnMat.color.lerp(tgt.setHex(th.mtn), k);
-  mtnGroup.visible = !th.noMtn;
-  sea.visible = !!th.sea;
-  for (const cm of cloudMats) cm.opacity += ((th.clouds ? 1 : 0) - cm.opacity) * k;
-  sunMesh.material.color.lerp(tgt.setHex(th.sun), k);
+  updatePano(th, dt);
+  scene.fog.near += ((th.fogNear || 300) - scene.fog.near) * k;
+  scene.fog.far += ((th.fogFar || 1600) - scene.fog.far) * k;
   ground.material.color.lerp(tgt.setHex(th.grass[1]), k);
   sunLight.intensity += ((th.night ? 0.5 : retro ? 2.6 : 2.4) - sunLight.intensity) * k;
   hemi.intensity += ((th.night ? 0.55 : retro ? 2.3 : 1.2) - hemi.intensity) * k;
-  sunLight.color.lerp(tgt.setHex(th.name === 'SUNSET COAST' ? 0xffa070 : 0xfff2dd), k);
+  sunLight.color.lerp(tgt.setHex(th.sunset ? 0xffa070 : 0xfff2dd), k);
 
   // 플레이어 차
   const ud = playerCar.userData;
@@ -1356,7 +1678,7 @@ function render(dt) {
   camera.updateProjectionMatrix();
 
   sky.position.copy(camera.position);
-  far.position.set(camera.position.x, camera.position.y - 30, camera.position.z);
+  far.position.set(camera.position.x, camera.position.y, camera.position.z);
   ground.position.set(camera.position.x, playerCar.position.y - 48, camera.position.z);
   sunLight.position.copy(playerCar.position).addScaledVector(sunDir, 120).add(_w.set(30, 60, 0));
   sunLight.target.position.copy(playerCar.position);
@@ -1381,12 +1703,13 @@ function hud() {
 }
 function updateEngine() {
   if (!actx) return;
-  const r = player.speed / MAXS[player.gear], now = actx.currentTime;
-  const f = 38 + r * 130 + player.gear * 18;
-  eng1.frequency.setTargetAtTime(f, now, 0.05);
-  eng2.frequency.setTargetAtTime(f * 0.501, now, 0.05);
-  engGain.gain.setTargetAtTime(state === 'title' ? 0 : 0.025 + r * 0.035, now, 0.1);
-  skidGain.gain.setTargetAtTime(player.skid > 0.2 && state !== 'title' ? 0.08 * player.skid : 0, now, 0.05);
+  const r = clamp(player.speed / MAXS[player.gear], 0, 1.05), now = actx.currentTime;
+  const f = (player.gear ? 68 : 58) + r * (player.gear ? 150 : 175);   // 기어 변속 시 회전음이 툭 떨어짐
+  engOsc.forEach(o => o.frequency.setTargetAtTime(f * o.mul, now, 0.04));
+  engOsc.lfo.frequency.setTargetAtTime(f / 4, now, 0.05);
+  engFilt.frequency.setTargetAtTime(450 + r * 2600, now, 0.05);
+  engGain.gain.setTargetAtTime(state === 'title' ? 0 : 0.05 + r * 0.06, now, 0.1);
+  skidGain.gain.setTargetAtTime(player.skid > 0.2 && state !== 'title' ? 0.12 * player.skid : 0, now, 0.04);
 }
 
 // ═════════════════════════ 루프 ═════════════════════════
