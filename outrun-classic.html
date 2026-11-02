@@ -36,10 +36,11 @@
 //  (그래픽·음악은 원작 데이터가 아니라 같은 스타일로 직접 그린/만든 것)
 // ════════════════════════════════════════════════════════════════════
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-const W = 320, H = 224, CY = 136, VS = H - 10 - CY;      // 수평선 높이, 세로 투영 배율
-const SEG_LEN = 200, RUMBLE_LEN = 3, ROAD_W = 2200, LANES = 6, CAM_H = 1000;
+ctx.imageSmoothingEnabled = false;
+const W = 320, H = 224, CY = 149, VS = H - 2 - CY;       // 원작처럼 수평선은 화면 높이의 2/3, 차는 맨 아래
+const SEG_LEN = 200, RUMBLE_LEN = 3, ROAD_W = 1200, LANES = 4, CAM_H = 1000;
 const CAM_DEPTH = 1 / Math.tan(50 * Math.PI / 180), PLAYER_Z = CAM_H * CAM_DEPTH, DRAW_DIST = 260;
-const SPRITE_SCALE = 0.25 / 96;
+const SPRITE_SCALE = 5.9 / ROAD_W;   // 차 스프라이트(80px)가 화면 폭의 약 1/4
 const MAX_SPEED = SEG_LEN * 60, GEAR_MAX = [MAX_SPEED * 198 / 293, MAX_SPEED];
 const STAGE_SEGS = 2100, FORK = 420, LEVELS = 5, START_TIME = 75, EXTEND = [62, 60, 58, 56];
 let seed = 1986;
@@ -60,36 +61,46 @@ function spr(w, h, draw) {
 }
 function flipX(src) { return spr(src.width, src.height, g => { g.translate(src.width, 0); g.scale(-1, 1); g.drawImage(src, 0, 0); }); }
 
-// 야자수: 휘어진 줄기(마디 무늬) + 축 늘어진 잎
+// 야자수 (원작 비율: 가늘고 긴 줄기, 길게 축 늘어진 잎, 촘촘한 잎사귀)
 function makePalm(lean, sd) {
   let s = sd; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
-  return spr(110, 150, (g, P, C) => {
-    const bx = 55, top = 40, cx = bx + lean;
-    for (let y = 149; y >= top; y--) {
-      const t = (149 - y) / (149 - top), x = bx + lean * t * t, w = 8 - t * 3.2;
-      P(x - w / 2, y, w, 1, '#b8915c');
-      P(x - w / 2, y, 2, 1, '#e0c08a');
-      P(x + w / 2 - 2, y, 2, 1, '#7a5630');
-      if (y % 5 === 0) P(x - w / 2, y, w, 1, '#8a6438');
+  return spr(170, 200, (g, P) => {
+    const bx = 85, top = 46, cx = bx + lean;
+    for (let y = 199; y >= top; y--) {
+      const t = (199 - y) / (199 - top), x = bx + lean * Math.pow(t, 1.6), w = 5.2 - t * 2;
+      P(x - w / 2, y, w, 1, '#b48c5c');
+      P(x - w / 2, y, 1.4, 1, '#e2c696');
+      P(x + w / 2 - 1.4, y, 1.4, 1, '#7c5a34');
+      if (y % 4 === 0) P(x - w / 2, y, w, 1, '#8c6840');
     }
-    const fr = [[-175, 40], [-150, 42], [-128, 30], [-105, 22], [-78, 22], [-52, 32], [-28, 42], [-5, 40], [160, 34], [20, 30]];
-    const drawFrond = ([a, L], dark) => {
-      const ar = a * Math.PI / 180;
+    // 잎: 방사형으로 뻗어 끝이 아래로 크게 휘어짐
+    const fronds = [];
+    for (let k = 0; k < 14; k++) {
+      const a = -180 + k * (200 / 13) + (r() - 0.5) * 8;      // -180(왼쪽) ~ +20(오른쪽 아래)
+      fronds.push([a, 58 + r() * 14, k % 3 === 0]);
+    }
+    fronds.push([-95, 30, false], [-75, 30, false]);
+    const leafCol = (q, len, k, back) => back ? (q < 3 ? '#0f3a16' : '#174c1e') :
+      q < 2 ? '#1a5a24' : q > len - 3 ? '#3aa83c' : (q + k) % 5 === 0 ? '#6ccc52' : (q + k) % 2 ? '#2a8a34' : '#248030';
+    const frond = ([a, L, back]) => {
+      const ar = a * Math.PI / 180, dxv = Math.cos(ar), dyv = Math.sin(ar);
       for (let k = 0; k <= L; k++) {
-        const t = k / L, px = cx + Math.cos(ar) * L * t, py = top + Math.sin(ar) * L * t * 0.55 + L * 0.8 * t * t;
-        const len = 9 * (1 - t * 0.55);
+        const t = k / L;
+        const px = cx + dxv * L * t * (1 - t * 0.25), py = top + dyv * L * t * 0.45 + L * 0.95 * t * t;
+        const len = (14 - t * 8) * (back ? 0.8 : 1);
         for (const sd2 of [-1, 1]) for (let q = 1; q <= len; q++) {
-          const lx = px + sd2 * q * 0.45 + Math.cos(ar) * q * 0.25, ly = py + q * 0.85;
-          P(lx, ly, 1, 1, dark ? '#16501e' : q < 3 ? '#1f6a2a' : (q + k) % 4 === 0 ? '#5cbf48' : '#2f9a3a');
+          const lx = px + sd2 * q * 0.55 + dxv * q * 0.15, ly = py + q * 0.75 + Math.abs(dxv) * q * 0.2;
+          P(lx, ly, 1, 1, leafCol(q, len, k, back));
         }
-        P(px, py, 2, 1, dark ? '#103a16' : '#2a7a2a');
+        P(px, py, 1, 1, back ? '#0c3010' : '#3a6a2a');
       }
     };
-    fr.filter((_, k) => k % 2).forEach(f => drawFrond([f[0] + 8, f[1] * 0.9], true));
-    fr.forEach(f => drawFrond([f[0] + (r() - 0.5) * 6, f[1]], false));
-    for (let k = 0; k < 4; k++) C(cx - 3 + k * 2, top + 3 + (k % 2) * 2, 2.2, '#7a5020');
+    fronds.filter(f => f[2]).forEach(frond);
+    fronds.filter(f => !f[2]).forEach(frond);
+    for (let k = 0; k < 5; k++) P(cx - 4 + k * 2, top + 2 + (k % 2) * 2, 3, 3, '#6a4418');
   });
 }
+
 const shadowImg = spr(80, 10, g => { g.fillStyle = 'rgba(40,40,60,0.35)'; g.beginPath(); g.ellipse(40, 5, 40, 5, 0, 0, 7); g.fill(); });
 function makeBush(col0, col1, col2, sd) {
   let s = sd; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
@@ -235,55 +246,98 @@ function makeCar(body, dark, type) {
   });
 }
 
-// 플레이어 차: 빨간 테스타로사 스파이더 뒷모습 + 운전자(갈색 머리, 파란 셔츠) + 금발 동승자
+// 플레이어 차: 원작 비율 (가로 80 × 세로 44) — 몸체가 대부분, 사람은 머리와 어깨 끝만 보임
 function makePlayer(lean, hair, brake) {
-  return spr(100, 60, (g, P, C) => {
-    const L = lean * 2, T = lean * 3;
-    const RED = '#e02222', RED_D = '#a81414', RED_DD = '#760c0c', RED_L = '#ff6a5a';
-    // 타이어
-    for (const tx of [6 - L * 0.5, 78 - L * 0.5]) { P(tx, 40, 16, 20, '#121212'); for (let y = 42; y < 60; y += 3) P(tx + 1, y, 14, 1, '#2c2c2c'); P(tx + 2, 40, 3, 20, '#2a2a2a'); }
-    // 윈드실드 프레임 (사람보다 뒤)
-    P(20 + T, 10, 60, 2, '#1a1a1a'); P(20 + T, 10, 2, 9, '#1a1a1a'); P(78 + T, 10, 2, 9, '#1a1a1a');
-    P(22 + T, 12, 56, 6, 'rgba(140,180,210,0.45)');
-    // 차체 (뒤 펜더가 넓은 형태)
-    for (let y = 16; y < 50; y++) {
-      const hw = y < 22 ? 36 + (y - 16) * 1.6 : y < 46 ? 46 : 46 - (y - 46) * 1.5, sh = Math.round((y < 30 ? L : L * 0.5));
-      P(50 - hw + sh, y, hw * 2, 1, y < 19 ? RED_L : y < 22 ? RED : y > 44 ? RED_D : RED);
-      P(50 - hw + sh, y, 3, 1, RED_DD); P(50 + hw - 3 + sh, y, 3, 1, RED_DD);
-      if (y >= 19 && y < 22) P(50 - hw + 4 + sh, y, hw * 2 - 8, 1, RED_L);
+  return spr(80, 44, (g, P, C) => {
+    const L = lean;                       // 핸들 방향으로 윗부분이 살짝 쏠림
+    const R0 = '#e44a46', R1 = '#c43430', R2 = '#962020', RH = '#ff9488', RHH = '#ffc4b8';
+    // 타이어 (차체 아래로 살짝 보임)
+    for (const tx of [4, 63]) { P(tx, 31, 13, 13, '#141414'); for (let y = 33; y < 44; y += 2) P(tx + 1, y, 11, 1, '#2e2e2e'); P(tx + 1, 31, 2, 13, '#262626'); }
+    // 윈드실드 프레임 + 미러 (사람 뒤)
+    P(15 + L * 2, 5, 50, 1, '#202020'); P(15 + L * 2, 5, 1, 6, '#202020'); P(64 + L * 2, 5, 1, 6, '#202020');
+    P(16 + L * 2, 6, 48, 3, 'rgba(150,190,220,0.5)');
+    P(5 + L * 2, 6, 7, 3, R0); P(5 + L * 2, 6, 7, 1, RH); P(11 + L * 2, 8, 4, 1, '#202020');
+    P(68 + L * 2, 6, 7, 3, R0); P(68 + L * 2, 6, 7, 1, RH); P(65 + L * 2, 8, 4, 1, '#202020');
+    // 운전자: 갈색 머리 (뒷통수) + 어깨 끝(파란 셔츠)
+    P(25 + L * 2, 8, 12, 3, '#3a64d0'); P(25 + L * 2, 8, 12, 1, '#6a90f0');
+    C(31 + L * 2, 5, 4, '#6a3a16'); P(29 + L * 2, 1, 4, 2, '#9a6030'); P(30 + L * 2, 8, 3, 1, '#e0a880');
+    // 동승자: 금발 (뒷통수) + 어깨 끝(분홍) — 머리카락이 오른쪽 뒤로 날림
+    P(43 + L * 2, 8, 12, 3, '#ff8ab4'); P(43 + L * 2, 8, 12, 1, '#ffc0d8');
+    C(49 + L * 2, 5, 4, '#f8c838'); P(47 + L * 2, 1, 4, 2, '#fff0a0');
+    for (let k = 0; k < 4; k++) {
+      const yy = 3 + k * 2, len = 3 + ((k + hair) % 3) * 2 + (k > 1 ? 2 : 0);
+      P(52 + L * 2, yy, len, 1, k % 2 ? '#e0a820' : '#ffd848');
+      P(52 + L * 2, yy + 1, len - 2, 1, '#f8c838');
     }
-    // 리어 데크 엔진 루버
-    for (let y = 17; y < 22; y += 2) P(36 + L, y, 28, 1, RED_D);
-    // 검은 리어 패널 + 가로 루버 + 루버 사이로 보이는 테일램프
-    P(12 + L * 0.5, 25, 76, 14, '#141414');
-    for (let y = 25; y < 39; y++) {
-      if ((y - 25) % 3 === 0) { P(12 + L * 0.5, y, 76, 1, '#3c3c3c'); continue; }
-      const lc = brake ? '#ff7070' : '#ff2a2a';
-      P(14 + L * 0.5, y, 18, 1, lc); P(68 + L * 0.5, y, 18, 1, lc);
+    // 차체 윗면 (리어 데크) — 위에서 살짝 내려다본 형태
+    for (let y = 10; y < 16; y++) {
+      const hw = 30 + (y - 10) * 1.6, sh = Math.round(L * 1.5 * (16 - y) / 6);
+      P(40 - hw + sh, y, hw * 2, 1, y < 12 ? RH : R0);
+      if (y === 10) P(40 - hw + 6 + sh, y, hw * 2 - 12, 1, RHH);
     }
-    P(48 + L * 0.5, 27, 4, 6, '#ffd400'); P(49 + L * 0.5, 28, 2, 3, '#222');
-    // 범퍼, 번호판, 머플러
-    P(40 + L * 0.5, 40, 20, 7, '#f2f2f2'); for (let x = 42; x < 58; x += 3) P(x + L * 0.5, 42, 2, 3, '#333');
-    for (const ex of [18, 25, 70, 77]) { C(ex + L * 0.5, 47, 2.6, '#aaaaaa'); C(ex + L * 0.5, 47, 1.3, '#222'); }
-    // 미러
-    P(2 + T, 14, 7, 4, RED); P(8 + T, 16, 4, 2, RED_D); P(91 + T, 14, 7, 4, RED); P(88 + T, 16, 4, 2, RED_D);
-    // 시트 헤드레스트
-    P(30 + T, 8, 12, 8, '#e8dcc0'); P(58 + T, 8, 12, 8, '#e8dcc0');
-    // 운전자 (왼쪽)
-    P(29 + T, 11, 15, 6, '#3a62d0'); P(29 + T, 11, 15, 1, '#5a82f0');
-    C(36 + T, 6, 5.5, '#6a3a14'); C(35 + T, 4, 3, '#8a5228'); P(34 + T, 10, 4, 2, '#e8b088');
-    // 금발 동승자 (오른쪽) — 머리카락이 바람에 날림
-    P(57 + T, 12, 14, 5, '#ff8ab0'); P(57 + T, 12, 14, 1, '#ffb0cc');
-    C(64 + T, 6, 5.5, '#ffd040'); C(63 + T, 4, 3, '#ffe890');
-    const wave = [0, 1, 2][hair];
-    for (let k = 0; k < 6; k++) {
-      const yy = 6 + k * 1.6, len = 6 + k + (k + wave) % 3 * 2;
-      P(68 + T, yy, len, 2, k % 2 ? '#e8b020' : '#ffd040');
+    for (let k = 0; k < 4; k++) P(30 + L, 11 + k, 20, 1, k % 2 ? R1 : R0);     // 엔진 커버 루버
+    // 차체 뒷면
+    for (let y = 16; y < 32; y++) {
+      const hw = y < 29 ? 39 : 39 - (y - 29), c = y < 18 ? R0 : y > 28 ? R2 : R1;
+      P(40 - hw, y, hw * 2, 1, c); P(40 - hw, y, 2, 1, R2); P(40 + hw - 2, y, 2, 1, R2);
     }
+    // 검은 리어 그릴 + 가로 루버, 그 뒤로 비치는 테일램프
+    P(9, 18, 62, 9, '#151515');
+    for (let y = 18; y < 27; y++) {
+      if ((y - 18) % 3 === 0) { P(9, y, 62, 1, '#444'); continue; }
+      const lc = brake ? '#ff8080' : '#ff2c2c';
+      P(11, y, 14, 1, lc); P(55, y, 14, 1, lc);
+    }
+    P(39, 19, 2, 4, '#ffd400');
+    // 번호판, 머플러
+    P(31, 28, 18, 5, '#f4f4f4'); for (let x = 33; x < 47; x += 3) P(x, 29, 2, 3, '#333');
+    P(10, 32, 60, 2, '#3a1010');
+    for (const ex of [14, 19, 61, 66]) { P(ex - 2, 32, 4, 3, '#b0b0b0'); P(ex - 1, 33, 2, 1, '#222'); }
   });
 }
 const playerImgs = [-1, 0, 1].map(l => [0, 1, 2].map(h => [false, true].map(b => makePlayer(l, h, b))));
-const playerShadow = spr(110, 14, g => { g.fillStyle = 'rgba(0,0,0,0.38)'; g.beginPath(); g.ellipse(55, 7, 55, 7, 0, 0, 7); g.fill(); });
+const playerShadow = spr(90, 10, g => { g.fillStyle = 'rgba(0,0,0,0.38)'; g.beginPath(); g.ellipse(45, 5, 45, 5, 0, 0, 7); g.fill(); });
+
+// 원작풍 해변 배경: 밑면이 평평한 거대한 뭉게구름(도트 음영) + 수평선 바다 + 낮은 수풀
+function beachBg(th) {
+  const HY = Math.round(PANO_HY / 4);
+  return spr(1024, 128, (g, P, C) => {
+    let s = 77; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const banks = [[70, 230, 100], [300, 150, 62], [520, 300, 104], [790, 200, 80], [960, 130, 58]];
+    for (const [cx, w, h] of banks) {
+      const puffs = [];
+      for (let k = 0; k < 46; k++) {
+        const u = (r() - 0.5) * 2, prof = Math.max(0, 1 - u * u);
+        const rad = 7 + r() * 15 * (0.4 + prof);
+        puffs.push([cx + u * w / 2, HY - 4 - r() * h * prof * 0.8 - rad * 0.3, rad]);
+      }
+      for (const off of [0, -1024, 1024]) {
+        for (const [x, y, rr] of puffs) C(x + off + 2, y + 3, rr, '#c4cedc');
+        for (const [x, y, rr] of puffs) C(x + off, y, rr, '#f6f8fc');
+        for (const [x, y, rr] of puffs) C(x + off - rr * 0.3, y - rr * 0.35, rr * 0.55, '#ffffff');
+      }
+    }
+    // 구름 아랫부분 도트 디더링 음영
+    const img = g.getImageData(0, 0, 1024, HY), d = img.data;
+    for (let y = 0; y < HY; y++) for (let x = 0; x < 1024; x++) {
+      const i = (y * 1024 + x) * 4;
+      if (d[i + 3] < 10) continue;
+      const lower = (y - (HY - 22)) / 22;
+      if (lower > 0 && (x + y) % 2 === 0 && lower > 0.35) { d[i] = 0xdc; d[i + 1] = 0xe2; d[i + 2] = 0xec; }
+    }
+    g.putImageData(img, 0, 0);
+    g.clearRect(0, HY - 3, 1024, 128);
+    // 바다 + 수풀 띠
+    P(0, HY - 4, 1024, 4, '#2858dc'); P(0, HY - 4, 1024, 1, '#6a98f4');
+    for (let x = 0; x < 1024;) {
+      const w = 6 + Math.floor(r() * 40), hh = 2 + Math.floor(r() * 4);
+      if (r() < 0.7) for (let q = 0; q < w; q += 3) { const bh = hh * (0.5 + 0.5 * Math.sin(q / w * Math.PI)) + r() * 1.5; P(x + q, HY - 2 - bh, 3, bh + 2, '#2f7a2a'); P(x + q, HY - 2 - bh, 3, 1, '#4ca23a'); }
+      x += w + Math.floor(r() * 30);
+    }
+    for (let k = 0; k < 6; k++) { const x = r() * 1024; P(x, HY - 8, 1, 5, '#fff'); P(x + 1, HY - 7, 2, 3, '#fff'); }
+    g.fillStyle = '#' + th.fog.toString(16).padStart(6, '0'); g.fillRect(0, HY, 1024, 128 - HY);
+  });
+}
 
 // 스프라이트 묶음 (폰트 로딩 뒤에 생성)
 let SP;
@@ -301,7 +355,7 @@ function buildSprites() {
     flagman: [makeFlagman(0), makeFlagman(1)],
     bill: ['TURBO', 'SUN OIL', 'COLA', 'SURF'].map((t, k) => makeBillboard(t, ['#d8262a', '#1f5fd0', '#f0a020', '#1f9a5a'][k])),
     cars: [['#f2f2f2', '#999', 'sedan'], ['#2a62d8', '#123', 'sedan'], ['#f0c020', '#860', 'bug'], ['#1f9a5a', '#063', 'sedan'], ['#7a3fc0', '#324', 'bug'], ['#d8262a', '#600', 'truck'], ['#222', '#000', 'sedan']]
-      .map(([b, d, t]) => ({ img: makeCar(b, d, t), k: t === 'truck' ? 1.9 : 1.95 })),
+      .map(([b, d, t]) => ({ img: makeCar(b, d, t), k: t === 'truck' ? 1.3 : 1.35 })),
   };
   SP.palmL = SP.palm.map(flipX);
 }
@@ -453,7 +507,7 @@ function panoTex(th) {
 }
 
 const bgCache = new Map();
-const getBg = th => { if (!bgCache.has(th.name)) bgCache.set(th.name, panoTex(th)); return bgCache.get(th.name); };
+const getBg = th => { if (!bgCache.has(th.name)) bgCache.set(th.name, th.pano === 'beach' && !th.sunset ? beachBg(th) : panoTex(th)); return bgCache.get(th.name); };
 
 // ════════════════════════════ 코스 생성 ════════════════════════════
 let segments = [], stages = [];
@@ -502,22 +556,22 @@ function decorate(st) {
     switch (th.set) {
       case 'beach':
         if (n % 9 === 0) for (const sd of [-1, 1]) {
-          const o = sd * (1.35 + rnd() * 0.5), img = (sd < 0 ? SP.palmL : SP.palm)[Math.floor(rnd() * 3)];
-          addSprite(n, shadowImg, 2.2, o + sd * 0.35, { ground: true });
-          addSprite(n, img, 3.4, o, { collide: 0.1 });
+          const o = sd * (sd < 0 ? 1.5 + rnd() * 0.3 : 1.8 + rnd() * 0.8), img = (sd < 0 ? SP.palmL : SP.palm)[Math.floor(rnd() * 3)];
+          addSprite(n, shadowImg, 1.6, o - sd * 0.25, { ground: true });
+          addSprite(n, img, 2.8, o, { collide: 0.06 });
         }
         if (rnd() < 0.08) tree(n, SP.bush, 1.6, 1.4, 1.6, 0.3);
         break;
       case 'gate':
-        if ((n - start) % 70 === 0 && n < forkStart - 40) addSprite(n, SP.gate, 3.9, 0, { gate: true });
+        if ((n - start) % 70 === 0 && n < forkStart - 40) addSprite(n, SP.gate, 2.2, 0, { gate: true });
         if (rnd() < 0.05) tree(n, SP.tree, 2.6, 1.6, 2.2);
         if (rnd() < 0.05) tree(n, SP.bush, 1.6, 1.3, 2.5, 0.3);
         break;
       case 'canyon': case 'canyonL': case 'canyonB': {
         const both = th.set === 'canyonB', left = th.set === 'canyonL';
         if (n % 2 === 0) {
-          if (both || !left) addSprite(n, SP.cliff[n % 3], 4.2, 1.5, { collide: 1, wall: true });
-          if (both || left) addSprite(n, SP.cliff[(n + 1) % 3], 4.2, -1.5, { collide: 1, wall: true });
+          if (both || !left) addSprite(n, SP.cliff[n % 3], 4.2, 2.0, { collide: 1, wall: true });
+          if (both || left) addSprite(n, SP.cliff[(n + 1) % 3], 4.2, -2.0, { collide: 1, wall: true });
         }
         if (rnd() < 0.04) tree(n, SP.rock, 1.8, 1.25, 0.2, 0.4);
         if (rnd() < 0.03) tree(n, SP.cactus, 2.0, 1.3, 0.2, 0.15);
@@ -550,17 +604,17 @@ function decorate(st) {
   }
   // 출발/체크포인트/골 게이트, 관중, 깃발맨
   if (st.level === 0) {
-    addSprite(start + 20, SP.start, 3.6, 0, { gate: true });
-    for (let n = start + 4; n < start + 64; n += 3) for (const sd of [-1, 1]) addSprite(n, SP.crowd[0][n % 3], 2.6, sd * (1.6 + rnd() * 0.3), { crowd: n % 3, collide: 0.8 });
-    addSprite(start + 30, SP.flagman[0], 2.2, -1.25, { flagman: true });
+    addSprite(start + 20, SP.start, 1.95, 0, { gate: true });
+    for (let n = start + 4; n < start + 64; n += 3) for (const sd of [-1, 1]) addSprite(n, SP.crowd[0][n % 3], 2.6, sd * (1.75 + rnd() * 0.3), { crowd: n % 3, collide: 0.8 });
+    addSprite(start + 30, SP.flagman[0], 2.2, -1.3, { flagman: true });
   }
   if (!st.final) {
-    addSprite(forkStart - 10, SP.check, 3.6, 0, { gate: true });
+    addSprite(forkStart - 10, SP.check, 1.95, 0, { gate: true });
     for (let n = forkStart - 40; n < forkStart - 12; n += 3) for (const sd of [-1, 1]) addSprite(n, SP.crowd[0][n % 3], 2.6, sd * (1.6 + rnd() * 0.3), { crowd: n % 3, collide: 0.8 });
     const L = THEMES[themeIdx(st.level + 1, st.j)].name, R = THEMES[themeIdx(st.level + 1, st.j + 1)].name;
-    addSprite(forkStart + 175, makeSign(L, R), 3.4, 0, { mid: true });
+    addSprite(forkStart + 175, makeSign(L, R), 1.6, 0, { mid: true });
   } else {
-    addSprite(st.goal, SP.goal, 3.6, 0, { gate: true });
+    addSprite(st.goal, SP.goal, 1.95, 0, { gate: true });
     for (let n = st.goal - 30; n < st.goal + 30; n += 3) for (const sd of [-1, 1]) addSprite(n, SP.crowd[0][n % 3], 2.6, sd * (1.6 + rnd() * 0.3), { crowd: n % 3, collide: 0.8 });
     for (const sd of [-1, 1]) addSprite(st.goal + 3, SP.flagman[0], 2.2, sd * 1.25, { flagman: true });
   }
@@ -641,7 +695,7 @@ function update(dt) {
   if (bumpT > 0) bumpT -= dt;
 
   // 스프라이트 충돌 (야자수·바위·절벽·관중·게이트 기둥)
-  const pw = 96 * SPRITE_SCALE * 0.8;
+  const pw = 80 * SPRITE_SCALE * 0.85;
   if (crashT <= 0 && speed > MAX_SPEED * 0.05) for (const s of pseg.sprites) {
     if (s.gate) { if (Math.abs(playerX) > 0.95 && Math.abs(playerX) < 1.4) hitBig(); continue; }
     if (!s.collide || s.ground) continue;
@@ -815,7 +869,7 @@ function drawPlayer() {
   let bounce = sp > 0 ? (Math.random() < 0.5 ? -1 : 1) * Math.random() * sp * (player.offroad ? 2.5 : 1) : 0;
   if (bumpT > 0) bounce -= Math.sin(bumpT * 30) * 3;
   const by = CY + VS;
-  ctx.drawImage(playerShadow, W / 2 - dw * 0.58, by - 5, dw * 1.16, 10);
+  ctx.drawImage(playerShadow, W / 2 - dw * 0.56, by - 6, dw * 1.12, 8);
   ctx.save();
   if (crashT > 0) {   // 원작처럼 차가 튀어 오르며 회전
     const t = 2.4 - crashT, hop = Math.max(0, Math.sin(Math.min(1, t / 1.2) * Math.PI)) * 40;
@@ -842,26 +896,26 @@ function tag(s, x, y, col) {
   return w;
 }
 function drawHud() {
-  let x = 6;
-  x += tag('TIME', x, 6, '#ff6400') + 4;
-  txt(String(Math.ceil(time)).padStart(2, ' '), x, 4, time < 10 && state === 'race' && Math.floor(time * 4) % 2 ? '#ff3030' : '#ffd800', 16); x += 36;
-  x += tag('SCORE', x, 6, '#d41bc8') + 4;
-  txt(String(Math.floor(score)).padStart(7, ' '), x, 8, '#e8e8f0'); x += 62;
-  x += tag('LAP', x, 6, '#0a62ff') + 4;
-  txt(`${Math.floor(lapT / 60)}'${String(Math.floor(lapT % 60)).padStart(2, '0')}"${String(Math.floor((lapT % 1) * 100)).padStart(2, '0')}`, x, 8, '#a6f5c2');
+  // 원작 배치: 윗줄 TIME / SCORE / LAP
+  tag('TIME', 17, 11, '#ff6400');
+  txt(String(Math.ceil(time)).padStart(2, ' '), 61, 7, time < 10 && state === 'race' && Math.floor(time * 4) % 2 ? '#ff3030' : '#ffd800', 16);
+  tag('SCORE', 96, 11, '#d41bc8');
+  txt(String(Math.floor(score)), 198, 13, '#e8e8f0', 8, 'right');
+  tag('LAP', 205, 11, '#0a62ff');
+  txt(`${Math.floor(lapT / 60)}'${String(Math.floor(lapT % 60)).padStart(2, '0')}"${String(Math.floor((lapT % 1) * 100)).padStart(2, '0')}`, 242, 13, '#a6f5c2');
   if (state === 'title') { drawTitle(); return; }
-  // 속도계
+  // 왼쪽 아래 속도계
   const kmh = Math.round(speed / MAX_SPEED * 293);
-  txt(String(kmh).padStart(3, ' '), 12, H - 34, '#ff5418', 16);
-  txt('km/h', 64, H - 28, '#ff8840');
-  const rpm = clamp(speed / GEAR_MAX[gear], 0, 1), lit = Math.round(rpm * 18);
-  for (let k = 0; k < 18; k++) { ctx.fillStyle = '#000'; ctx.fillRect(13 + k * 5, H - 13, 4, 7); ctx.fillStyle = k < lit ? (k > 14 ? '#ff4040' : k > 10 ? '#ffd800' : '#5cff8a') : '#9aa0c0'; ctx.fillRect(12 + k * 5, H - 14, 4, 7); }
-  txt(gear ? 'HI' : 'LO', 106, H - 15, gear ? '#ff4040' : '#ffffff');
-  // 스테이지 + 체커기
-  txt('STAGE', W - 92, H - 22, '#ffe600', 8);
-  txt(String(curStage.level + 1), W - 44, H - 26, '#ffffff', 16);
-  for (let yy = 0; yy < 3; yy++) for (let xx = 0; xx < 5; xx++) { ctx.fillStyle = (xx + yy) % 2 ? '#111' : '#fff'; ctx.fillRect(W - 24 + xx * 3, H - 25 + yy * 3, 3, 3); }
-  ctx.strokeStyle = '#fff'; ctx.strokeRect(W - 24.5, H - 25.5, 16, 10);
+  txt(String(kmh).padStart(3, ' '), 24, 196, '#ff5418', 16);
+  txt('km/h', 76, 204, '#ff8840');
+  const rpm = clamp(speed / GEAR_MAX[gear], 0, 1), lit = Math.round(rpm * 16);
+  for (let k = 0; k < 16; k++) { ctx.fillStyle = '#000'; ctx.fillRect(27 + k * 5, 216, 4, 6); ctx.fillStyle = k < lit ? (k > 13 ? '#ff4040' : k > 9 ? '#ffd800' : '#5cff8a') : '#a0a8c8'; ctx.fillRect(26 + k * 5, 215, 4, 6); }
+  txt(gear ? 'HI' : 'LO', 110, 214, gear ? '#ff4040' : '#ffffff');
+  // 오른쪽 아래 STAGE + 체커기
+  txt('STAGE', 232, 206, '#ffe600', 8);
+  txt(String(curStage.level + 1), 278, 202, '#ffffff', 16);
+  for (let yy = 0; yy < 4; yy++) for (let xx = 0; xx < 6; xx++) { ctx.fillStyle = (xx + yy) % 2 ? '#111' : '#fff'; ctx.fillRect(298 + xx * 3, 204 + yy * 3, 3, 3); }
+  ctx.strokeStyle = '#fff'; ctx.strokeRect(297.5, 203.5, 19, 13);
   // 메시지
   if (state === 'countdown') txt(cdT > 3 ? 'READY' : String(Math.ceil(cdT - 0.2)), W / 2, 70, '#ffd800', 16, 'center');
   if (msgT > 0) { txt(msgA, W / 2, 62, '#ffd800', msgA.length > 12 ? 8 : 16, 'center'); txt(msgB, W / 2, 86, '#ffffff', 8, 'center'); }
